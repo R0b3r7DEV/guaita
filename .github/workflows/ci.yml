@@ -19,9 +19,19 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Binario directo (no la action): escanea TODA la historia sin depender
+      # del rango base..head del evento, que peta en el primer push por el
+      # commit raíz (`<root>^` no existe). Pinneado por versión + sha256.
+      - name: Instalar gitleaks (verificado por sha256)
+        run: |
+          VERSION=8.24.3
+          SHA256=9991e0b2903da4c8f6122b5c3186448b927a5da4deef1fe45271c3793f4ee29c
+          curl -sSL -o gitleaks.tar.gz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz"
+          echo "${SHA256}  gitleaks.tar.gz" | sha256sum -c -
+          tar -xzf gitleaks.tar.gz gitleaks
+      - name: Escanear toda la historia
+        run: ./gitleaks detect --source . --redact --no-banner
 
   backend:
     name: Backend (build + test)
