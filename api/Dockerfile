@@ -19,6 +19,6 @@ RUN apt-get update \
 COPY --from=build /app/build/libs/*.jar app.jar
 USER guaita
 EXPOSE 8080
-HEALTHCHECK --interval=10s --timeout=5s --start-period=40s --retries=6 \
+HEALTHCHECK --interval=10s --timeout=5s --start-period=60s --retries=18 \
   CMD curl -fsS http://localhost:8080/actuator/health || exit 1
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

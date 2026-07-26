@@ -30,7 +30,7 @@ Es una herramienta analítica y de portafolio. Este aviso debe aparecer en la UI
 ## Comandos
 
 ```bash
-make up            # docker compose up -d (db, api, web)
+make up            # docker compose up -d --build --wait (db, api, web); bloquea hasta healthy
 make down
 make seed          # carga geodatos estáticos (municipios, MDT, PATFOR)
 make ingest        # fuerza una pasada de ingesta de feeds vivos

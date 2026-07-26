@@ -3,8 +3,8 @@
 
 .PHONY: up down logs migrate test lint seed ingest backtest
 
-up:            ## Levanta db, api y web
-	docker compose up -d --build
+up:            ## Levanta db, api y web; bloquea hasta que estén healthy
+	docker compose up -d --build --wait
 
 down:          ## Para y elimina los contenedores
 	docker compose down

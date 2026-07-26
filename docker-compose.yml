@@ -39,8 +39,8 @@ services:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 12
-      start_period: 40s
+      retries: 18
+      start_period: 60s
 
   web:
     build: ./web
