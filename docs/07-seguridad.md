@@ -40,6 +40,26 @@ descargo no sea una nota al pie sino un elemento persistente de la interfaz.
   cliente, **nunca** en `localStorage`.
 - Contraseñas con Argon2id. Nada de BCrypt nuevo en 2026.
 
+### Decisión: sin auto-registro (cuentas creadas por administrador)
+
+No habrá registro público ni recuperación de contraseña. Son 135 municipios, un
+conjunto **cerrado y pequeño**: las cuentas de técnico municipal las crea un
+administrador manualmente. Esto elimina de la Fase 5 todo el flujo de alta,
+verificación de correo y recuperación de contraseña — superficie de ataque que no
+hace falta mantener.
+
+Modelo de usuario mínimo (a implementar en Fase 5, **no antes**):
+
+| Campo | Notas |
+|---|---|
+| `id` | uuid |
+| `email` | citext, único |
+| `password_hash` | Argon2id |
+| `ine_code` | municipio autorizado |
+| `rol` | p. ej. `tecnico` \| `admin` |
+
+Decisión tomada; queda escrita, no implementada.
+
 ## Cabeceras
 
 ```

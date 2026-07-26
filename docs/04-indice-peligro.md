@@ -98,9 +98,11 @@ No todos los municipios tienen estación. Estrategia por orden:
    más cercanas, con **corrección altitudinal de temperatura** aplicando un
    gradiente de −0,65 °C / 100 m sobre la diferencia de altitud entre la estación
    y la altitud media del municipio.
-3. Marcar en `fwi_municipio` la calidad del dato (`interpolado` sí/no y número de
-   estaciones usadas). Un dato interpolado en Vistabella desde estaciones de la
-   costa es mucho menos fiable y hay que poder saberlo.
+3. Persistir la meteo asignada y su calidad en `meteo_municipio` (`interpolado`
+   sí/no y `n_estaciones` usadas). Un dato interpolado en Vistabella desde
+   estaciones de la costa es mucho menos fiable y hay que poder saberlo.
+   `fwi_municipio` consume esta tabla; la calidad es propiedad de la meteo, no
+   del FWI (ver doc 03).
 
 La corrección altitudinal importa de verdad aquí: hay 1.800 m de desnivel entre
 Penyagolosa y la Plana.

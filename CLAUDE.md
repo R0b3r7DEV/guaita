@@ -23,14 +23,14 @@ Es una herramienta analítica y de portafolio. Este aviso debe aparecer en la UI
 | ETL pesado | GDAL/ogr2ogr en contenedor Python 3.12 | Cargar shapefiles sin GeoTools |
 | Frontend | React 19 + Vite + TypeScript | Stack conocido del autor (Cuentia) |
 | Mapas | MapLibre GL JS | Open source, sin token ni cuota |
-| Tiles vectoriales | `pg_tileserv` o endpoint MVT propio | `ST_AsMVT` desde PostGIS |
+| Tiles vectoriales | Endpoint MVT propio (ADR-04, sin `pg_tileserv`) | `ST_AsMVT` desde PostGIS |
 | Infra | Docker Compose | VPS propio con Apache como reverse proxy |
 | Tests | JUnit 5 + Testcontainers | Tests de integración con PostGIS real |
 
 ## Comandos
 
 ```bash
-make up            # docker compose up -d (db, api, web, tileserv)
+make up            # docker compose up -d (db, api, web)
 make down
 make seed          # carga geodatos estáticos (municipios, MDT, PATFOR)
 make ingest        # fuerza una pasada de ingesta de feeds vivos
@@ -46,10 +46,15 @@ make backtest      # ejecuta la validación histórica del índice
 /api          Spring Boot. Módulos: ingest, risk, wui, alerts, web(controllers)
 /etl          Scripts Python/GDAL para carga de geodatos estáticos
 /web          React + Vite
-/db           Migraciones Flyway (V1__…, V2__…)
 /docs         Documentación viva. LEER ANTES DE IMPLEMENTAR.
 /data         Descargas locales (gitignored, puede pesar GB)
 ```
+
+**No hay `/db` en la raíz.** Las migraciones Flyway viven en
+`api/src/main/resources/db/migration` (convención de Spring): cero configuración,
+funcionan con Testcontainers sin tocar nada y viajan dentro del jar, así que el
+artefacto desplegado es autocontenido. Ponerlas en `/db` obligaría a un
+`spring.flyway.locations` con `filesystem:` y rompería el jar empaquetado.
 
 ## Reglas de trabajo
 

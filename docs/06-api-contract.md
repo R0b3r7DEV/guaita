@@ -14,14 +14,16 @@ Base: `/api/v1`. JSON. Fechas ISO-8601. Geometrías GeoJSON en **EPSG:4326**
 ## Endpoints públicos
 
 ### `GET /municipios`
-Lista de municipios con su índice más reciente.
+Lista de municipios con su índice más reciente. El objeto `banderas` tiene la
+**misma forma** que en el detalle (`regla303030`, `vientoAlineado`), para que el
+cliente no maneje dos representaciones.
 
 ```json
 {
   "data": [
     { "ineCode": "12126", "nombre": "la Vall d'Uixó", "comarca": "Plana Baixa",
       "indice": 78.4, "nivel": 4, "fecha": "2026-07-26",
-      "alerta303030": true }
+      "banderas": { "regla303030": true, "vientoAlineado": true } }
   ],
   "meta": { "fecha": "2026-07-26", "versionModelo": "v1.0" }
 }
@@ -48,7 +50,9 @@ Detalle: desglose de los tres componentes, códigos FWI del día, serie de los
 ```
 
 `calidadDato` no es decorativo: un índice interpolado desde tres estaciones
-lejanas merece menos confianza y el usuario debe verlo.
+lejanas merece menos confianza y el usuario debe verlo. Se sirve desde
+`meteo_municipio` (`interpolado`, `n_estaciones`), no desde `fwi_municipio`
+(ver doc 03).
 
 ### `GET /municipios/{ineCode}/serie?desde=&hasta=`
 Serie histórica diaria del índice y del FWI. Máximo 5 años por petición.

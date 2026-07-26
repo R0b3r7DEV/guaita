@@ -75,12 +75,34 @@ create table observacion_meteo (
   fetched_at      timestamptz not null default now(),
   primary key (estacion_codigo, fecha)
 );
+
+-- Meteo YA asignada a cada municipio (tras interpolación IDW + corrección
+-- altitudinal, ver doc 04). Es la ENTRADA del FWI, separada del cálculo.
+-- Separarla permite: (a) cambiar de fuente AEMET<->Open-Meteo sin tocar el
+-- FWI, (b) reproducir el backtest sobre la misma entrada meteo exacta, y
+-- (c) depurar por separado el fallo de interpolación del fallo de la fórmula.
+-- La calidad del dato (interpolado / n_estaciones) es propiedad de la meteo
+-- asignada, NO del FWI; el endpoint del doc 06 sirve calidadDato desde aquí.
+create table meteo_municipio (
+  ine_code         char(5) not null references municipio(ine_code),
+  fecha            date    not null,
+  temp_12utc_c     numeric(5,2) not null,
+  hr_12utc_pct     numeric(5,2) not null,
+  viento_12utc_kmh numeric(5,2) not null,
+  precip_24h_mm    numeric(6,2) not null,
+  interpolado      boolean  not null,
+  n_estaciones     smallint not null,
+  source           text     not null,
+  fetched_at       timestamptz not null default now(),
+  primary key (ine_code, fecha)
+);
 ```
 
 ## Índices calculados
 
 ```sql
 -- Códigos FWI. Recursivos: cada día depende del anterior. Ver doc 04.
+-- Consume la entrada meteorológica de meteo_municipio por (ine_code, fecha).
 create table fwi_municipio (
   ine_code   char(5) not null references municipio(ine_code),
   fecha      date    not null,
@@ -103,6 +125,8 @@ create table indice_peligro (
   comp_vulnerab   numeric(5,2) not null,   -- 0..100, casi estático
   indice          numeric(5,2) not null,   -- combinación, ver doc 04
   nivel           smallint not null,       -- 1..5
+  alerta_30_30_30 boolean not null default false, -- regla del 30, bandera aparte (doc 04)
+  viento_alineado boolean not null default false, -- viento ±45° con la ladera dominante
   version_modelo  text not null,           -- 'v1.0' — imprescindible
   primary key (ine_code, fecha)
 );
