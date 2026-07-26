@@ -26,7 +26,7 @@ planifica fueron redactados entre 2007 y 2013 y actualizados en 2013–2014.
 
 ## Stack
 
-Java 21 · Spring Boot 3.3 · PostgreSQL 16 + PostGIS 3.4 · React 19 + Vite ·
+Java 21 · Spring Boot 4.1 · PostgreSQL 16 + PostGIS 3.4 · React 19 + Vite ·
 MapLibre GL · Docker Compose
 
 ## Arranque

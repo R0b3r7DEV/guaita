@@ -1,0 +1,34 @@
+spring:
+  application:
+    name: guaita-api
+
+  datasource:
+    # Los valores por defecto permiten arrancar en local; en Docker los
+    # sobrescriben las variables de entorno del compose. En los tests, la
+    # anotación @ServiceConnection de Testcontainers reemplaza este datasource.
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${POSTGRES_DB:guaita}
+    username: ${POSTGRES_USER:guaita}
+    password: ${POSTGRES_PASSWORD:guaita}
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Flyway es el dueño del esquema; Hibernate no toca la BD.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  flyway:
+    enabled: true
+    # locations por defecto: classpath:db/migration (convención Spring).
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true

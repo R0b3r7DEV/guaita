@@ -13,7 +13,7 @@ backend y luego el front".
 
 - [ ] Repo, `.gitignore`, `.env.example`, licencia (MIT o AGPL — decidir).
 - [ ] `docker-compose.yml`: `db` (postgis/postgis:16-3.4), `api`, `web`.
-- [ ] Spring Boot 3.3 + Flyway + `V1__extensions.sql` (postgis, citext, pgcrypto).
+- [ ] Spring Boot 4.1 + Flyway + `V1__extensions.sql` (postgis, citext, pgcrypto).
 - [ ] Vite + React + TS arrancando.
 - [ ] CI en GitHub Actions: build + test + gitleaks.
 - [ ] `make up` levanta todo y `/actuator/health` responde.

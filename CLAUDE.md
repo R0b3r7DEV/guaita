@@ -17,7 +17,7 @@ Es una herramienta analítica y de portafolio. Este aviso debe aparecer en la UI
 
 | Capa | Tecnología | Motivo |
 |---|---|---|
-| Backend | Java 21 + Spring Boot 3.3 | Stack conocido del autor (XPL0DAY) |
+| Backend | Java 21 + Spring Boot 4.1 | Stack conocido del autor (XPL0DAY); 4.1 es la GA soportada (T8) |
 | BD | PostgreSQL 16 + PostGIS 3.4 | Geoprocesado en BD, no en app |
 | Migraciones | Flyway | Versionado de esquema, incluye SQL espacial |
 | ETL pesado | GDAL/ogr2ogr en contenedor Python 3.12 | Cargar shapefiles sin GeoTools |
