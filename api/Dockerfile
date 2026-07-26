@@ -12,6 +12,9 @@ RUN ./gradlew --no-daemon clean bootJar -x test
 # --- Runtime: JRE 21, usuario sin privilegios ---
 FROM eclipse-temurin:21-jre
 WORKDIR /app
+# curl NO es opcional: lo usa el healthcheck definido en docker-compose.yml,
+# que se ejecuta DENTRO de este contenedor. eclipse-temurin:21-jre (Ubuntu) no
+# lo trae. No quitar aunque este Dockerfile ya no declare HEALTHCHECK.
 RUN apt-get update \
   && apt-get install -y --no-install-recommends curl \
   && rm -rf /var/lib/apt/lists/* \
@@ -19,6 +22,6 @@ RUN apt-get update \
 COPY --from=build /app/build/libs/*.jar app.jar
 USER guaita
 EXPOSE 8080
-HEALTHCHECK --interval=10s --timeout=5s --start-period=60s --retries=18 \
-  CMD curl -fsS http://localhost:8080/actuator/health || exit 1
+# El healthcheck vive en la orquestación (docker-compose.yml), no aquí: el
+# Dockerfile queda agnóstico de cómo se despliega la imagen.
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
