@@ -1,0 +1,24 @@
+# Normalización de fin de línea. El repo trabaja en LF; Windows hace checkout
+# a CRLF si su core.autocrlf lo pide, pero lo que se versiona es LF.
+* text=auto eol=lf
+
+# Scripts que DEBEN conservar su terminador nativo
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+gradlew text eol=lf
+*.sh    text eol=lf
+
+# Binarios: nunca tocar
+*.jar   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.pdf   binary
+*.zip   binary
+*.tif   binary
+*.tiff  binary
+*.shp   binary
+*.dbf   binary
+*.gpkg  binary

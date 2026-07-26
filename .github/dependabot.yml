@@ -1,0 +1,19 @@
+version: 2
+updates:
+  # Cadena de suministro del backend (docs/07 §T8)
+  - package-ecosystem: gradle
+    directory: /api
+    schedule:
+      interval: weekly
+
+  # Frontend
+  - package-ecosystem: npm
+    directory: /web
+    schedule:
+      interval: weekly
+
+  # Actions del propio CI (permite pinnear/actualizar por SHA)
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

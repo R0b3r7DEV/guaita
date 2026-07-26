@@ -62,4 +62,4 @@ NASA FIRMS · AEMET OpenData · Copernicus EFFIS · PATFOR (Generalitat Valencia
 
 ## Licencia
 
-Por decidir (MIT o AGPL-3.0).
+MIT. Ver [LICENSE](LICENSE).

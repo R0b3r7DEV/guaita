@@ -1,0 +1,38 @@
+# --- Secretos: NUNCA versionar (regla cero, docs/07-seguridad.md) ---
+.env
+.env.local
+.env.*.local
+*.local.env
+
+# --- Datos descargados (pueden pesar GB, docs/02) ---
+/data/*
+!/data/.gitkeep
+
+# --- Java / Gradle ---
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+*.class
+out/
+bin/
+
+# --- Node / Vite ---
+node_modules/
+dist/
+dist-ssr/
+*.tsbuildinfo
+.vite/
+
+# --- Informes generados (docs/09) ---
+/reports/
+
+# --- IDE / editor ---
+.idea/
+*.iml
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# --- Logs locales ---
+*.log
