@@ -1,0 +1,17 @@
+# Configuración de gitleaks para GUAITA.
+# Extiende el ruleset por defecto (no lo reemplaza) y añade una allowlist.
+title = "GUAITA gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = """
+.env.example contiene únicamente valores de ejemplo (placeholders) por diseño;
+nunca secretos reales. El .env real está en .gitignore y jamás se versiona.
+La regla generic-api-key marca el placeholder de JWT_SECRET por entropía: es
+un falso positivo esperado.
+"""
+paths = [
+  '''(^|/)\.env\.example$''',
+]
