@@ -1,0 +1,71 @@
+# ==========================================================================
+# DESBLOQUEO TEMPORAL, NO la forma normal de trabajar.
+#
+# Este workflow existe SOLO para poder ejecutar `make seed` (que descarga
+# cientos de MB y construye la BD) cuando el Docker local del desarrollador
+# no funciona. El desarrollo normal de la Fase 1 es LOCAL. No conviertas
+# este job en el flujo habitual: es caro y lento.
+#
+# Disparo MANUAL únicamente (workflow_dispatch). NUNCA en push.
+# ==========================================================================
+name: Seed (manual · desbloqueo temporal)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  seed:
+    name: make seed + cuadre + artefactos
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Preparar .env (contraseña generada al vuelo)
+        run: |
+          cp .env.example .env
+          sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$(openssl rand -hex 16)|" .env
+
+      - name: Levantar la base de datos
+        run: docker compose up -d --wait db
+
+      - name: make seed (con todas las aserciones) — log íntegro
+        run: |
+          set -o pipefail
+          make seed 2>&1 | tee seed.log
+
+      - name: Consultas de cuadre
+        run: |
+          set -o pipefail
+          docker compose exec -T db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1' \
+            < etl/checks/cuadre.sql | tee cuadre.txt
+
+      - name: pg_dump (-Fc) de las tablas cargadas
+        run: |
+          docker compose exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -Fc -d "$POSTGRES_DB"' > guaita-db.dump
+
+      # if: always() -> sube artefactos aunque falle una aserción (para poder
+      # depurar el fallo). El job igualmente queda ROJO si el seed falla.
+      - name: Subir log de seed, cuadre y dump
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: seed-resultado
+          path: |
+            seed.log
+            cuadre.txt
+            guaita-db.dump
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Subir inventario PATFOR (si ya existe)
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: patfor-inventario
+          path: etl/reports/patfor-inventario.md
+          if-no-files-found: ignore
+          retention-days: 7
