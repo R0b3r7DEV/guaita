@@ -72,7 +72,7 @@ done
 
 # Diagnóstico empírico (primera vez): formato real del nationalCode.
 echo "==> Muestra de nationalCode (ine_code = últimos 5):"
-run_sql -c "select nationalcode, right(nationalcode,5) as ine_code from stg_muni limit 3;"
+run_sql -c "select nationalcode, right(nationalcode::text,5) as ine_code from stg_muni limit 3;"
 
 # --- 4. Construir municipio (idempotente) + aserciones ------------------------
 echo "==> Construyendo tabla municipio + aserciones de integridad…"
@@ -100,11 +100,11 @@ select g.ine_code,
        round((st_area(g.geom) / 10000.0)::numeric, 2),
        p.poblacion
 from (
-  select right(nationalcode, 5) as ine_code,
+  select right(nationalcode::text, 5) as ine_code,
          st_multi(st_union(geom)) as geom      -- une features partidas de un mismo muni
   from stg_muni
-  where right(nationalcode, 5) like '12%'
-  group by right(nationalcode, 5)
+  where right(nationalcode::text, 5) like '12%'
+  group by right(nationalcode::text, 5)
 ) g
 join tmp_nombre  n using (ine_code)
 join tmp_comarca c using (ine_code)
