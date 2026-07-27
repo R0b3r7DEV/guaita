@@ -26,6 +26,35 @@ NULL/0 se propagaría en silencio como "municipio deshabitado". Se corta en el
 esquema, no solo en las aserciones del seed. (Actualizado respecto al DDL
 original, que la tenía nullable.)
 
+### Geometría administrativa vs. geometría de trabajo continental
+
+`municipio.geom` es la geometría **administrativa** oficial y es correcta tal
+cual: el término de Castelló de la Plana (INE `12040`) incluye el archipiélago
+de las **Columbretes** (~19,7 ha emergidas, a ~56 km de la costa). Su islote más
+oriental lleva el máximo X provincial a ~815.520 en 25830, y `superficie_ha`
+refleja la superficie real (islas incluidas). **No se toca.**
+
+Pero las tareas que "barren" el territorio —derivar las hojas MTN50 del MDT,
+clipar el PATFOR con buffer, encuadrar el visor— sobre esa geometría
+arrastrarían decenas de km de mar abierto por cuatro peñascos. Para eso está la
+vista materializada **`mv_provincia_continental`** (migración V3): la provincia
+disuelta **menos los polígonos insulares**. Su máximo X baja a ~797.748.
+
+Criterio de exclusión (elegido con los datos reales, no a ojo): se descartan los
+polígonos cuya distancia a la mayor masa (el continente) supera **10 km**
+(`UMBRAL_ISLA_M`). Medido sobre la geometría real: los polígonos continentales
+están a 0 km y las Columbretes a 54,9–56,8 km; 10 km cae en ese hueco sin
+ambigüedad. El umbral se cambia en un solo sitio (la migración V3).
+
+| Geometría | Qué es | La usan |
+|---|---|---|
+| `municipio.geom` | Administrativa, con islas; `superficie_ha` real | Superficie oficial, informes, agregados por término |
+| `mv_provincia_continental` | Continente disuelto, sin islas | Hojas MTN50, clip del PATFOR, extent del visor |
+
+El seed verifica **ambas por separado**: extent administrativo (máx X ≈ 815.520,
+incluye islas) y extent continental (máx X ≈ 797.748). Una sola aserción ancha
+no detectaría que las islas se hayan colado en la geometría de trabajo.
+
 ```sql
 
 -- Terreno forestal PATFOR, recortado a la provincia.

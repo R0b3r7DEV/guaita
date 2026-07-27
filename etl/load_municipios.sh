@@ -151,15 +151,16 @@ begin
   if not exists (select 1 from municipio where nombre = 'l''Alcora') then
     raise exception 'falta/mal codificado "l''Alcora"'; end if;
 
-  -- Sanidad de proyección: el extent debe caer dentro de Castellón en 25830
-  -- (una inversión de ejes lat/lon daría valores absurdos, fuera de este sobre).
-  -- Extent real medido: X 683987..815520, Y 4399186..4519161; sobre con margen.
+  -- Extent ADMINISTRATIVO: incluye las Columbretes (INE 12040), que llevan el
+  -- máximo X provincial a ~815.520. Sobre con margen; una inversión de ejes
+  -- lat/lon daría valores absurdos, fuera de aquí. (La aserción CONTINENTAL,
+  -- más estricta, va aparte tras refrescar mv_provincia_continental.)
   if not (
     select st_xmin(e) > 660000 and st_xmax(e) < 830000
        and st_ymin(e) > 4380000 and st_ymax(e) < 4540000
     from (select st_extent(geom) e from municipio) t
   ) then
-    raise exception 'extent de municipio fuera del sobre de Castellón (¿ejes/proyección?)';
+    raise exception 'extent administrativo fuera del sobre de Castellón (¿ejes/proyección?)';
   end if;
 end \$\$;
 
@@ -167,3 +168,29 @@ commit;
 SQL
 
 echo "==> municipios: OK (135 términos cargados y verificados)."
+
+# --- 5. Geometría de trabajo continental (excluye Columbretes) ----------------
+echo "==> Refrescando mv_provincia_continental (aísla las islas)…"
+run_sql -c "refresh materialized view mv_provincia_continental;"
+run_sql <<'SQL'
+do $$
+declare cx numeric; ax numeric;
+begin
+  select st_xmax(st_extent(geom)) into cx from mv_provincia_continental;
+  select st_xmax(st_extent(geom)) into ax from municipio;
+  if cx is null then raise exception 'mv_provincia_continental vacía'; end if;
+
+  -- Extent CONTINENTAL: sin las Columbretes el máximo X baja a ~797.748.
+  -- Sobre estrecho: si las islas se colaran, cx pasaría de 800000 y saltaría.
+  if cx < 660000 or cx > 800000 then
+    raise exception 'extent continental maxX=% fuera de rango (¿islas no excluidas o ejes?)', round(cx);
+  end if;
+
+  -- Discriminante entre ambas geometrías: la administrativa DEBE superar a la
+  -- continental por el este (las islas). Si fueran iguales, la exclusión falló.
+  if ax <= cx then
+    raise exception 'admin maxX=% no supera continental maxX=%: la exclusión de islas no funcionó', round(ax), round(cx);
+  end if;
+end $$;
+SQL
+echo "==> geometría continental: OK (maxX continental < administrativo; islas aisladas)."
