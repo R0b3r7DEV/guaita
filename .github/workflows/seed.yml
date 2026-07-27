@@ -29,8 +29,10 @@ jobs:
           cp .env.example .env
           sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$(openssl rand -hex 16)|" .env
 
-      - name: Levantar la base de datos
-        run: docker compose up -d --wait db
+      - name: "Levantar db + api (api aplica las migraciones Flyway V1, V2…)"
+        # El esquema (tabla municipio) lo crea Flyway al arrancar la api, igual
+        # que en local con `make up`. Sin esto, el seed no tiene dónde cargar.
+        run: docker compose up -d --build --wait db api
 
       - name: make seed (con todas las aserciones) — log íntegro
         run: |
