@@ -15,9 +15,10 @@ echo "==> Verificando conexión a PostGIS…"
 psql -v ON_ERROR_STOP=1 -tAc "select postgis_version();" >/dev/null
 echo "    conexión OK."
 
-# Las capas se cargan en los commits siguientes de la Fase 1, cada una en su
-# script y de forma idempotente:
-#   ./load_municipios.sh       (límites CNIG + comarcas + padrón INE)
-#   ./load_terreno_forestal.sh (PATFOR, ST_Subdivide)
-#   ./load_topografia.sh       (MDT25 + gdaldem slope + estadísticos zonales)
-echo "==> Contenedor ETL operativo. Aún sin capas cargadas (ver commits de Fase 1)."
+echo "==> [1/3] Municipios…"
+bash /etl/load_municipios.sh
+
+# Pendientes en los commits siguientes de la Fase 1 (idempotentes):
+#   [2/3] ./load_terreno_forestal.sh (PATFOR, ST_Subdivide)
+#   [3/3] ./load_topografia.sh       (MDT25 + gdaldem slope + estadísticos zonales)
+echo "==> seed: municipios cargados. Capas 2/3 y 3/3 pendientes (Fase 1 en curso)."

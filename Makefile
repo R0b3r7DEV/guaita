@@ -25,6 +25,9 @@ lint:          ## Formato/estilo: Spotless (api) + typecheck (web)
 seed:          ## [Fase 1] Carga idempotente de geodatos estáticos (contenedor etl)
 	docker compose --profile etl run --rm etl ./seed.sh
 
+comarcas:      ## [Fase 1] Regenera etl/mappings/comarcas_castellon.csv desde el PEGV (one-shot, deliberado)
+	docker compose --profile etl run --rm etl bash ./build_comarcas.sh
+
 # --- Aún no implementados; pertenecen a fases posteriores del roadmap ---
 ingest:        ## [Fase 2] Primera pasada de feeds vivos
 	@echo "ingest: feeds vivos — Fase 2, aún no implementado." && exit 1

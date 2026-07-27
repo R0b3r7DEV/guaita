@@ -13,11 +13,20 @@ create table municipio (
   nombre_va       text,
   comarca         text        not null,
   geom            geometry(MultiPolygon, 25830) not null,
-  superficie_ha   numeric(10,2) not null,
-  poblacion       integer,
-  constraint municipio_srid check (st_srid(geom) = 25830)
+  superficie_ha   numeric(10,2) not null,       -- ST_Area(geom)/10000 en 25830
+  poblacion       integer not null,             -- padrón INE; NOT NULL a propósito
+  constraint municipio_srid check (st_srid(geom) = 25830),
+  constraint municipio_poblacion_pos check (poblacion > 0)
 );
 create index municipio_geom_gix on municipio using gist (geom);
+```
+
+`poblacion` es **NOT NULL con CHECK (> 0)**: entra en `comp_vulnerab` (doc 04) y un
+NULL/0 se propagaría en silencio como "municipio deshabitado". Se corta en el
+esquema, no solo en las aserciones del seed. (Actualizado respecto al DDL
+original, que la tenía nullable.)
+
+```sql
 
 -- Terreno forestal PATFOR, recortado a la provincia.
 create table terreno_forestal (

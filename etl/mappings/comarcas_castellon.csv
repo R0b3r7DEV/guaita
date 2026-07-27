@@ -1,0 +1,143 @@
+# comarcas_castellon.csv - municipio (codigo INE) -> comarca
+# Fuente: Portal Estadistico GVA (PEGV), "Municipios y comarcas".
+# URL: https://pegv.gva.es/documents/163706934/379210449/Municipios+y+comarcas+a+1+de+enero+de+2026.xlsx/a5622ee2-bea1-643f-d4b7-a498900932ef?t=1780295046805
+# Fecha de referencia: 1 de enero de 2026. Codigos INE asignados por el INE.
+# Comarcalizacion: disposicion adicional unica de la Ley 2/2020, de 2 de
+#   diciembre, de Informacion Geografica y del Institut Cartografic Valencia.
+# Generado por make comarcas (etl/parse_comarcas.py). NO editar a mano.
+ine_code,municipio,comarca
+12001,Atzeneta del Maestrat,L'Alt Maestrat
+12002,Aín,La Plana Baixa
+12003,Albocàsser,L'Alt Maestrat
+12004,Alcalà de Xivert,El Baix Maestrat
+12005,"Alcora, l'",L'Alcalatén
+12006,Alcudia de Veo,La Plana Baixa
+12007,Alfondeguilla,La Plana Baixa
+12008,Algimia de Almonacid,El Alto Palancia
+12009,Almassora,La Plana Alta
+12010,Almedíjar,El Alto Palancia
+12011,Almenara,La Plana Baixa
+12012,Altura,El Alto Palancia
+12013,Arañuel,El Alto Mijares
+12014,Ares del Maestrat,L'Alt Maestrat
+12015,Argelita,El Alto Mijares
+12016,Artana,La Plana Baixa
+12017,Ayódar,El Alto Mijares
+12018,Azuébar,El Alto Palancia
+12020,Barracas,El Alto Palancia
+12021,Betxí,La Plana Baixa
+12022,Bejís,El Alto Palancia
+12024,Benafer,El Alto Palancia
+12025,Benafigos,L'Alt Maestrat
+12026,Benassal,L'Alt Maestrat
+12027,Benicarló,El Baix Maestrat
+12028,Benicàssim/Benicasim,La Plana Alta
+12029,Benlloc,La Plana Alta
+12031,Borriol,La Plana Alta
+12032,Borriana/Burriana,La Plana Baixa
+12033,Cabanes,La Plana Alta
+12034,Càlig,El Baix Maestrat
+12036,Canet lo Roig,El Baix Maestrat
+12037,Castell de Cabres,El Baix Maestrat
+12038,Castellfort,Els Ports
+12039,Castellnovo,El Alto Palancia
+12040,Castelló de la Plana/Castelló de la Plana,La Plana Alta
+12041,Castillo de Villamalefa,El Alto Mijares
+12042,Catí,L'Alt Maestrat
+12043,Caudiel,El Alto Palancia
+12044,Cervera del Maestre,El Baix Maestrat
+12045,Cinctorres,Els Ports
+12046,Cirat,El Alto Mijares
+12048,Cortes de Arenoso,El Alto Mijares
+12049,Costur,L'Alcalatén
+12050,"Coves de Vinromà, les",La Plana Alta
+12051,Culla,L'Alt Maestrat
+12052,Xert,El Baix Maestrat
+12053,Chilches/Xilxes,La Plana Baixa
+12055,Xodos/Chodos,L'Alcalatén
+12056,Chóvar,El Alto Palancia
+12057,Eslida,La Plana Baixa
+12058,Espadilla,El Alto Mijares
+12059,Fanzara,El Alto Mijares
+12060,Figueroles,L'Alcalatén
+12061,Forcall,Els Ports
+12063,Fuente la Reina,El Alto Mijares
+12064,Fuentes de Ayódar,El Alto Mijares
+12065,Gaibiel,El Alto Palancia
+12067,Geldo,El Alto Palancia
+12068,Herbers,Els Ports
+12069,Higueras,El Alto Palancia
+12070,"Jana, la",El Baix Maestrat
+12071,Jérica,El Alto Palancia
+12072,Llucena/Lucena del Cid,L'Alcalatén
+12073,Ludiente,El Alto Mijares
+12074,"Llosa, la",La Plana Baixa
+12075,"Mata de Morella, la",Els Ports
+12076,Matet,El Alto Palancia
+12077,Moncofa,La Plana Baixa
+12078,Montán,El Alto Mijares
+12079,Montanejos,El Alto Mijares
+12080,Morella,Els Ports
+12081,Navajas,El Alto Palancia
+12082,Nules,La Plana Baixa
+12083,Olocau del Rey,Els Ports
+12084,Onda,La Plana Baixa
+12085,Orpesa/Oropesa del Mar,La Plana Alta
+12087,Palanques,Els Ports
+12088,Pavías,El Alto Palancia
+12089,Peníscola/Peñíscola,El Baix Maestrat
+12090,Pina de Montalgrao,El Alto Palancia
+12091,Portell de Morella,Els Ports
+12092,Puebla de Arenoso,El Alto Mijares
+12093,"Pobla de Benifassà, la",El Baix Maestrat
+12094,"Pobla Tornesa, la",La Plana Alta
+12095,Ribesalbes,La Plana Baixa
+12096,Rossell,El Baix Maestrat
+12097,Sacañet,El Alto Palancia
+12098,"Salzadella, la",El Baix Maestrat
+12099,Sant Jordi/San Jorge,El Baix Maestrat
+12100,Sant Mateu,El Baix Maestrat
+12101,San Rafael del Río,El Baix Maestrat
+12102,Santa Magdalena de Pulpis,El Baix Maestrat
+12103,"Serratella, la",L'Alt Maestrat
+12104,Segorbe,El Alto Palancia
+12105,Sierra Engarcerán,La Plana Alta
+12106,Soneja,El Alto Palancia
+12107,Sot de Ferrer,El Alto Palancia
+12108,Suera/Sueras,La Plana Baixa
+12109,Tales,La Plana Baixa
+12110,Teresa,El Alto Palancia
+12111,Tírig,L'Alt Maestrat
+12112,Todolella,Els Ports
+12113,Toga,El Alto Mijares
+12114,Torás,El Alto Palancia
+12115,"Toro, El",El Alto Palancia
+12116,Torralba del Pinar,El Alto Mijares
+12117,Torreblanca,La Plana Alta
+12118,Torrechiva,El Alto Mijares
+12119,"Torre d'en Besora, la",L'Alt Maestrat
+12120,"Torre d'en Doménec, la",La Plana Alta
+12121,Traiguera,El Baix Maestrat
+12122,"Useres, les/Useras",L'Alcalatén
+12123,Vallat,El Alto Mijares
+12124,Vall d'Alba,La Plana Alta
+12125,Vall de Almonacid,El Alto Palancia
+12126,"Vall d'Uixó, la",La Plana Baixa
+12127,Vallibona,Els Ports
+12128,Vilafamés,La Plana Alta
+12129,Vilafranca/Villafranca del Cid,Els Ports
+12130,Villahermosa del Río,El Alto Mijares
+12131,Villamalur,El Alto Mijares
+12132,Vilanova d'Alcolea,La Plana Alta
+12133,Villanueva de Viver,El Alto Mijares
+12134,Vilar de Canes,L'Alt Maestrat
+12135,Vila-real,La Plana Baixa
+12136,"Vilavella, la",La Plana Baixa
+12137,Villores,Els Ports
+12138,Vinaròs,El Baix Maestrat
+12139,Vistabella del Maestrat,L'Alt Maestrat
+12140,Viver,El Alto Palancia
+12141,Zorita del Maestrazgo,Els Ports
+12142,Zucaina,El Alto Mijares
+12901,"Alqueries, les/Alquerías del Niño Perdido",La Plana Baixa
+12902,Sant Joan de Moró,La Plana Alta
