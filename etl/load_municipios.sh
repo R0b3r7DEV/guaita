@@ -152,9 +152,10 @@ begin
     raise exception 'falta/mal codificado "l''Alcora"'; end if;
 
   -- Sanidad de proyección: el extent debe caer dentro de Castellón en 25830
-  -- (una inversión de ejes lat/lon lo sacaría de este sobre).
+  -- (una inversión de ejes lat/lon daría valores absurdos, fuera de este sobre).
+  -- Extent real medido: X 683987..815520, Y 4399186..4519161; sobre con margen.
   if not (
-    select st_xmin(e) > 680000 and st_xmax(e) < 810000
+    select st_xmin(e) > 660000 and st_xmax(e) < 830000
        and st_ymin(e) > 4380000 and st_ymax(e) < 4540000
     from (select st_extent(geom) e from municipio) t
   ) then
