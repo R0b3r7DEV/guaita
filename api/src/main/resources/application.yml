@@ -3,12 +3,13 @@ spring:
     name: guaita-api
 
   datasource:
-    # Los valores por defecto permiten arrancar en local; en Docker los
-    # sobrescriben las variables de entorno del compose. En los tests, la
-    # anotación @ServiceConnection de Testcontainers reemplaza este datasource.
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${POSTGRES_DB:guaita}
-    username: ${POSTGRES_USER:guaita}
-    password: ${POSTGRES_PASSWORD:guaita}
+    # Sin defaults en credenciales ni nombre de BD: un entorno mal configurado
+    # debe fallar al arrancar, no conectarse con una credencial conocida y
+    # documentada en un repo público. (Tests: @ServiceConnection de
+    # Testcontainers sustituye este datasource; no dependen de estos valores.)
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
 
   jpa:
     open-in-view: false
