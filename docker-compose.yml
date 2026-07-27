@@ -58,5 +58,24 @@ services:
       retries: 12
       start_period: 15s
 
+  # ETL de geodatos estáticos. profile "etl" => NO arranca con `make up`;
+  # se ejecuta a demanda con `make seed`. Ver etl/ y docs/02.
+  etl:
+    build: ./etl
+    profiles: ["etl"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGPORT: 5432
+      PGDATABASE: ${POSTGRES_DB}
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./data:/data            # descargas (gitignored)
+      - ./etl:/etl              # scripts + reports
+    working_dir: /etl
+
 volumes:
   db_data:

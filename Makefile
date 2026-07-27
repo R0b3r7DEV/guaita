@@ -22,10 +22,10 @@ lint:          ## Formato/estilo: Spotless (api) + typecheck (web)
 	cd api && ./gradlew spotlessCheck
 	cd web && npm run lint
 
-# --- Aún no implementados; pertenecen a fases posteriores del roadmap ---
-seed:          ## [Fase 1] Carga de geodatos estáticos
-	@echo "seed: geodatos estáticos — Fase 1, aún no implementado." && exit 1
+seed:          ## [Fase 1] Carga idempotente de geodatos estáticos (contenedor etl)
+	docker compose --profile etl run --rm etl ./seed.sh
 
+# --- Aún no implementados; pertenecen a fases posteriores del roadmap ---
 ingest:        ## [Fase 2] Primera pasada de feeds vivos
 	@echo "ingest: feeds vivos — Fase 2, aún no implementado." && exit 1
 
