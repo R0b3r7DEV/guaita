@@ -48,6 +48,15 @@ services:
       - api
     ports:
       - "5173:80" # casa con la URL documentada del visor (README)
+    healthcheck:
+      # busybox wget (nginx:alpine). IPv4 explícito: `localhost` puede resolver a
+      # ::1 y nginx (listen 80) solo escucha IPv4 -> falso unhealthy. Flags
+      # separados (-q -O), el pegado -qO- es frágil en busybox.
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
 
 volumes:
   db_data:
