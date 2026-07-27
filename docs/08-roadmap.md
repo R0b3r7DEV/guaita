@@ -9,16 +9,21 @@ backend y luego el front".
 
 ---
 
-## Fase 0 · Cimientos (semana 1)
+## Fase 0 · Cimientos (semana 1) — ✅ COMPLETADA
 
-- [ ] Repo, `.gitignore`, `.env.example`, licencia (MIT o AGPL — decidir).
-- [ ] `docker-compose.yml`: `db` (postgis/postgis:16-3.4), `api`, `web`.
-- [ ] Spring Boot 4.1 + Flyway + `V1__extensions.sql` (postgis, citext, pgcrypto).
-- [ ] Vite + React + TS arrancando.
-- [ ] CI en GitHub Actions: build + test + gitleaks.
-- [ ] `make up` levanta todo y `/actuator/health` responde.
+- [x] Repo, `.gitignore`, `.env.example`, licencia (MIT).
+- [x] `docker-compose.yml`: `db` (postgis/postgis:16-3.4), `api`, `web`.
+- [x] Spring Boot 4.1 + Flyway + `V1__extensions.sql` (postgis, citext, pgcrypto).
+- [x] Vite + React + TS arrancando.
+- [x] CI en GitHub Actions: build + test + gitleaks.
+- [x] `make up` levanta todo y `/actuator/health` responde.
 
 **Criterio de aceptación:** un `git clone` + `make up` en limpio funciona.
+
+**Validado automáticamente en CI** por el job `smoke`: genera un `.env`, ejecuta
+`make up` (con `--wait`, el código de salida es el veredicto) y comprueba que
+`/actuator/health` devuelve `status: UP`. No es una afirmación manual: cada push
+lo reejecuta.
 
 ---
 

@@ -104,6 +104,9 @@ nodo, es suficiente).
 
 - `.env` en `.gitignore` desde el primer commit, y `.env.example` versionado.
 - Secretos de producción en el gestor del VPS, no en el repo.
+- **Ninguna credencial tiene valor por defecto en configuración versionada. Un
+  entorno incompleto debe fallar en el arranque, no degradarse a una credencial
+  conocida.**
 - Pipeline: `gitleaks` → build → tests → `dependencyCheck` → `npm audit`.
 - Rotación de la clave FIRMS/AEMET documentada en un runbook.
 
