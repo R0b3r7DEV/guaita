@@ -2,11 +2,12 @@
 # se ejecuta a demanda con `make seed` (servicio bajo profile en compose).
 # Trae GDAL (ogr2ogr, gdaldem, gdal_*) + Python GDAL. Le añadimos el cliente
 # psql (para las aserciones de integridad) y curl (descargas).
-FROM osgeo/gdal:ubuntu-small-latest
+FROM ghcr.io/osgeo/gdal:ubuntu-small-latest
 
-# NOTA: 'latest' se debe pinnear a una versión concreta (p. ej.
-# ubuntu-small-3.10.x) tras el primer pull verificado, coherente con el resto
-# del repo. Se deja pendiente hasta confirmar el tag disponible.
+# Imagen viva en ghcr.io (el repo Docker Hub osgeo/gdal está obsoleto: se quedó
+# en 3.6.3, 2023). El tag ubuntu-small-latest está verificado como existente.
+# Pinnear a una versión/digest concreta queda pendiente, coherente con el
+# pinning del resto del repo.
 RUN apt-get update \
   && apt-get install -y --no-install-recommends postgresql-client curl ca-certificates unzip \
   && rm -rf /var/lib/apt/lists/*
