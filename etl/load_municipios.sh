@@ -5,14 +5,16 @@
 #   - geometría + nationalCode: CNIG, GML INSPIRE AU (EPSG:4258 -> 25830)
 #   - nombre:    del propio GML (parse_nombres.py; ine_code = right(nationalCode,5))
 #   - comarca:   etl/mappings/comarcas_castellon.csv (PEGV, committeado)
-#   - poblacion: INE tabla 2865 (parse_poblacion.py; Sexo=Total, último año)
+#   - poblacion: INE padrón pobmun (CPRO+CMUN son campos dedicados; se prefiere
+#               a la tabla 2865, cuyo ine_code habría que parsearlo de una cadena
+#               de presentación tipo "12126 Vall d'Uixó, la").
 set -euo pipefail
 
 DATA=/data
 MAP=/etl/mappings
 COMARCAS_CSV="$MAP/comarcas_castellon.csv"
 CNIG_URL="https://centrodedescargas.cnig.es/CentroDescargas/documentos/atom/au/lineas_limite_gml.zip"
-INE_2865_URL="https://www.ine.es/jaxiT3/files/t/es/csv_bdsc/2865.csv"
+INE_POBMUN_URL="https://www.ine.es/pob_xls/pobmun.zip"
 CNIG_ZIP="$DATA/lineas_limite_gml.zip"
 GML_DIR="$DATA/lineas_limite_gml"
 
@@ -45,9 +47,9 @@ fi
 echo "==> GML municipal: $(basename "${MUNI_GML[0]}")"
 
 # --- 2. Datos tabulares por ine_code (parsers verificados) --------------------
-echo "==> Descargando y parseando población del INE (tabla 2865)…"
-curl -fsSL -o "$DATA/ine_2865.csv" "$INE_2865_URL"
-python3 /etl/parse_poblacion.py "$DATA/ine_2865.csv" "$DATA/poblacion.csv"
+echo "==> Descargando y parseando el padrón del INE (pobmun)…"
+curl -fsSL -o "$DATA/pobmun.zip" "$INE_POBMUN_URL"
+python3 /etl/parse_poblacion.py "$DATA/pobmun.zip" "$DATA/poblacion.csv"
 
 echo "==> Extrayendo nombres del GML…"
 python3 /etl/parse_nombres.py "${MUNI_GML[0]}" "$DATA/nombres.csv"
