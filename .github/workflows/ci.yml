@@ -66,3 +66,24 @@ jobs:
       - name: Build
         working-directory: web
         run: npm run build
+
+  smoke:
+    name: Smoke (make up + health) — criterio Fase 0
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Preparar .env (credenciales generadas al vuelo)
+        run: |
+          cp .env.example .env
+          sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$(openssl rand -hex 16)|" .env
+          sed -i "s|^JWT_SECRET=.*|JWT_SECRET=$(openssl rand -hex 32)|" .env
+      - name: make up (con --wait, el código de salida ES el veredicto)
+        run: make up
+      - name: Comprobar /actuator/health = UP
+        run: |
+          set -o pipefail
+          curl -fsS http://localhost:8080/actuator/health | tee /dev/stderr | grep -q '"status":"UP"'
+      - name: make down
+        if: always()
+        run: make down
