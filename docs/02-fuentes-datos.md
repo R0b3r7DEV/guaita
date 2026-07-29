@@ -112,6 +112,24 @@ forestales`. Descarga en formato shape.
   esquema usa (probablemente una adaptación del sistema Prometheus de 7 modelos,
   habitual en España) y mapearlo explícitamente. **No asumir.**
 
+**Realidad verificada (Fase 1).**
+- La capa de terreno forestal se toma del **WFS del ICV como GeoPackage**
+  (`typename=SF.Forestal`, UTF-8, **SRID 25830 nativo**). Con esta fuente, las
+  trampas de shapefile de arriba (SRID sin declarar, DBF ISO-8859-1, campos
+  truncados a 10 caracteres) **no aplican**.
+- `SF.Forestal` es **solo extensión** (atributos `forestal`/`compatible`/`prov`);
+  **no contiene modelos de combustible**. El modelo de combustible es una capa
+  aparte del mismo WFS: `ms:Regulacion.Incendios.Combustible` = «Modelo de
+  combustible (clas. **Rothermel**, 13 modelos)» — **no Prometheus**. Pendiente
+  para Fase 3 (ver docs/04 §2.2, RIESGO ABIERTO).
+- **Recorte y limitación fronteriza.** El terreno forestal se recorta contra la
+  geometría de trabajo continental **+ buffer de 5 km** (el fuego cruza límites:
+  Bejís 2022 pasó de Castellón a Valencia). Pero el **PATFOR solo cubre la
+  Comunitat Valenciana**, así que el buffer capta la franja **valenciana**
+  fronteriza (Alt Palància, els Ports hacia Valencia) pero **no la aragonesa**
+  (Teruel). Limitación conocida; la capa equivalente de Aragón queda fuera de
+  alcance por ahora.
+
 ---
 
 ## 5. CNIG / IGN

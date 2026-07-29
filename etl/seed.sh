@@ -18,7 +18,9 @@ echo "    conexión OK."
 echo "==> [1/3] Municipios…"
 bash /etl/load_municipios.sh
 
-# Pendientes en los commits siguientes de la Fase 1 (idempotentes):
-#   [2/3] ./load_terreno_forestal.sh (PATFOR, ST_Subdivide)
-#   [3/3] ./load_topografia.sh       (MDT25 + gdaldem slope + estadísticos zonales)
-echo "==> seed: municipios cargados. Capas 2/3 y 3/3 pendientes (Fase 1 en curso)."
+echo "==> [2/3] Terreno forestal (PATFOR)…"
+bash /etl/load_terreno_forestal.sh
+
+# Pendiente en el commit siguiente de la Fase 1 (idempotente):
+#   [3/3] ./load_topografia.sh  (MDT25 + gdaldem slope + estadísticos zonales)
+echo "==> seed: municipios + terreno forestal cargados. Capa 3/3 pendiente (Fase 1 en curso)."

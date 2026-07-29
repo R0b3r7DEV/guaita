@@ -30,6 +30,10 @@ dist-ssr/
 # --- Informes generados (docs/09) ---
 /reports/
 
+# --- Inventarios generados por el ETL (el CI los sube como artefacto) ---
+etl/reports/*
+!etl/reports/.gitkeep
+
 # --- IDE / editor ---
 .idea/
 *.iml
