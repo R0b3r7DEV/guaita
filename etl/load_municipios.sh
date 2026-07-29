@@ -89,7 +89,7 @@ create temp table tmp_nombre(ine_code text, nombre text);
 create temp table tmp_pob(ine_code text, poblacion integer);
 \copy tmp_pob from '$DATA/poblacion.csv' with (format csv, header true)
 
-truncate municipio;
+truncate municipio cascade;   -- cascade: topografia_municipio (FK) se recarga en [3/3]
 
 insert into municipio (ine_code, nombre, nombre_va, comarca, geom, superficie_ha, poblacion)
 select g.ine_code,
