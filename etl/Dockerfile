@@ -9,7 +9,7 @@ FROM ghcr.io/osgeo/gdal:ubuntu-small-latest
 # Pinnear a una versión/digest concreta queda pendiente, coherente con el
 # pinning del resto del repo.
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends postgresql-client curl ca-certificates unzip \
+  && apt-get install -y --no-install-recommends postgresql-client curl ca-certificates unzip python3-numpy \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /etl

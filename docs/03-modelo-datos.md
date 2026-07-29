@@ -80,13 +80,20 @@ create table edificacion (
 create index ed_geom_gix on edificacion using gist (geom);
 create index ed_muni_ix  on edificacion (ine_code);
 
--- Métricas topográficas precalculadas por municipio (gdaldem + zonal stats).
+-- Métricas topográficas precalculadas por municipio (MDT25, gdaldem + zonales).
+-- LIMITACIÓN DE RESOLUCIÓN (25 m): el MDE suaviza el relieve, así que la
+-- pendiente calculada es SISTEMÁTICAMENTE MENOR que la real. Sirve para
+-- COMPARAR municipios entre sí (que es el uso en el índice, doc 04); NO es
+-- comparable con valores de literatura calculados a otra resolución. Se usa
+-- pendiente_p90_pct además de la media: en un término mandan los barrancos, no
+-- el promedio. NoData (mar) declarado -> sin pendientes falsas en la costa.
 create table topografia_municipio (
   ine_code            char(5) primary key references municipio(ine_code),
-  pendiente_media_pct numeric(5,2),
-  pendiente_p90_pct   numeric(5,2),
-  frac_solana         numeric(4,3),   -- fracción con orientación S/SE/SO
-  altitud_media_m     numeric(7,2)
+  pendiente_media_pct numeric(5,2) not null,
+  pendiente_p90_pct   numeric(5,2) not null,
+  frac_solana         numeric(4,3) not null,   -- fracción con orientación S/SE/SO
+  altitud_media_m     numeric(7,2) not null,
+  constraint topo_p90_ge_media check (pendiente_p90_pct >= pendiente_media_pct)
 );
 ```
 

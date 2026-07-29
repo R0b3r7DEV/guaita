@@ -23,6 +23,7 @@ bash /etl/load_terreno_forestal.sh
 echo "==> [2/3] Modelo de combustible (PATFOR, Anderson)…"
 bash /etl/load_modelo_combustible.sh
 
-# Pendiente en el commit siguiente de la Fase 1 (idempotente):
-#   [3/3] ./load_topografia.sh  (MDT25 + gdaldem slope + estadísticos zonales)
-echo "==> seed: municipios + terreno forestal + combustible cargados. Capa 3/3 pendiente."
+echo "==> [3/3] Topografía (MDT25: pendiente, orientación, altitud)…"
+bash /etl/load_topografia.sh
+
+echo "==> seed: Fase 1 COMPLETA (municipios + forestal + combustible + topografía)."
