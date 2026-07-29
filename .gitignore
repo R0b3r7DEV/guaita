@@ -33,6 +33,8 @@ dist-ssr/
 # --- Inventarios generados por el ETL (el CI los sube como artefacto) ---
 etl/reports/*
 !etl/reports/.gitkeep
+# La tabla de descarga del MDT25 es un doc deliberado (lista de la compra), sí se versiona
+!etl/reports/mdt25-descarga.md
 
 # --- IDE / editor ---
 .idea/
