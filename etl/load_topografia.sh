@@ -63,9 +63,11 @@ ds=gdal.Open(sys.argv[1]); gt=ds.GetGeoTransform(); c=ds.RasterXSize; r=ds.Raste
 print(c, r, gt[0], gt[3], gt[0]+c*gt[1], gt[3]+r*gt[5])
 PY
 )
-gdal_rasterize -q -a ine_int -ot Int32 -init 0 -a_nodata 0 \
+gdal_rasterize -q -a ine_int -ot Int32 -init 0 -a_nodata 0 -at \
   -te "$ULX" "$LRY" "$LRX" "$ULY" -ts "$COLS" "$ROWS" \
   "$DATA/muni_zone.gpkg" "$ZONE"
+# -at (ALL_TOUCHED): todo municipio recibe los píxeles que TOCA; sin él, un
+# término pequeño sin centro de píxel dentro se quedaba fuera (134 de 135).
 
 # --- 5. Estadísticos zonales -> CSV ------------------------------------------
 echo "==> Estadísticos zonales por municipio…"
