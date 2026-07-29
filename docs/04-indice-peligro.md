@@ -146,6 +146,26 @@ buffer de 2 km fuera del término: el fuego no respeta líneas jurisdiccionales)
 
 ### 2.2 Modelo de combustible
 
+> **⚠️ RIESGO ABIERTO (resolver antes de Fase 3).** La capa `SF.Forestal` del
+> PATFOR —la que carga la Fase 1 en `terreno_forestal`— **no contiene modelos de
+> combustible**: es solo extensión forestal. La tabla de pesos de abajo asume el
+> esquema **Prometheus (7 modelos)**.
+>
+> La investigación del WFS del PATFOR (Fase 1) encontró que **el modelo de
+> combustible sí existe como dato público**, pero en otra capa:
+> `ms:Regulacion.Incendios.Combustible` = «Modelo de combustible (clas.
+> **Rothermel**)». Es decir: existe, pero es **Rothermel (13 modelos), NO
+> Prometheus (7)**. **Esta tabla no corresponde al dato real** y hay que rehacer
+> `peso_modelo_ponderado` para los 13 modelos de Rothermel antes de que la
+> Fase 3 calcule `comp_estructural`.
+>
+> Vías de sustitución si la capa Rothermel no sirviera (solo apuntadas, sin
+> evaluar aquí):
+> - Derivar una aproximación de estructura de vegetación desde **SIOSE** o
+>   **Corine Land Cover** (públicos y bien documentados).
+> - Prescindir del factor y compensar con más peso en `continuidad` y
+>   `f_tiempo`, asumiendo la pérdida de precisión.
+
 Mapear el esquema del PATFOR a un peso de inflamabilidad 0..1. Si es Prometheus
 (7 modelos), orientación:
 
