@@ -52,11 +52,15 @@ def main(dem_p, slope_p, aspect_p, zone_p, out):
         tierra = demv != dem_nd                      # píxeles de tierra (DEM válido)
         n_tierra = int(tierra.sum())
         if n_tierra == 0:
+            print(f"  AVISO: {ine:05d} sin píxeles de tierra (todo NoData) -> omitido",
+                  file=sys.stderr)
             continue
 
         sl_ok = tierra & (slv != slope_nd)           # pendiente válida (no borde NoData)
         sl = slv[sl_ok]
         if sl.size == 0:
+            print(f"  AVISO: {ine:05d} sin pendiente válida (n_tierra={n_tierra}) -> omitido",
+                  file=sys.stderr)
             continue
 
         as_ok = tierra & (asv != aspect_nd)          # aspecto válido (no llano)

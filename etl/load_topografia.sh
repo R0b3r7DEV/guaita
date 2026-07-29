@@ -50,8 +50,12 @@ gdalbuildvrt -q -srcnodata "$NODATA" -vrtnodata "$NODATA" \
 
 # --- 3. Pendiente (%) y orientación SOBRE EL MOSAICO -------------------------
 echo "==> gdaldem slope -p (porcentaje) y aspect sobre el mosaico…"
-gdaldem slope -p  "$VRT" "$SLOPE"  -q     # -p: %, no grados. Sin -s (V y H en metros).
-gdaldem aspect    "$VRT" "$ASPECT" -q     # grados; NoData en llanos.
+# -compute_edges: calcula pendiente/orientación en bordes y junto a NoData usando
+# SOLO los vecinos válidos (ignora el NoData). Así la franja costera de tierra
+# obtiene pendiente real en vez de perderse, y sin el artefacto tierra<->mar
+# (el NoData no entra en el cálculo). -p: %, no grados. Sin -s (V y H en metros).
+gdaldem slope -p -compute_edges "$VRT" "$SLOPE"  -q
+gdaldem aspect   -compute_edges "$VRT" "$ASPECT" -q     # grados; NoData en llanos.
 
 # --- 4. Rasterizar municipios en la MISMA rejilla que el mosaico -------------
 echo "==> Rasterizando municipios (zona) alineado al mosaico…"
