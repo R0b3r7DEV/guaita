@@ -146,45 +146,49 @@ buffer de 2 km fuera del término: el fuego no respeta líneas jurisdiccionales)
 
 ### 2.2 Modelo de combustible
 
-> **⚠️ RIESGO ABIERTO (resolver antes de Fase 3).** La capa `SF.Forestal` del
-> PATFOR —la que carga la Fase 1 en `terreno_forestal`— **no contiene modelos de
-> combustible**: es solo extensión forestal. La tabla de pesos de abajo asume el
-> esquema **Prometheus (7 modelos)**.
+> **⚠️ RIESGO ABIERTO (parcialmente resuelto en Fase 1).** La capa `SF.Forestal`
+> —la que carga `terreno_forestal`— **no** contiene modelos de combustible. Pero
+> la Fase 1 **localizó y cargó** la capa que sí los tiene:
+> `Regulacion.Incendios.Combustible` del WFS del PATFOR (tabla
+> `modelo_combustible_patfor`), esquema **Anderson/Rothermel**. De los 13 modelos
+> aparecen 7 de vegetación (2..8) más un `0` = no combustible; faltan el 1 y
+> 9..13 (ver `etl/reports/patfor-combustible-inventario.md`).
 >
-> La investigación del WFS del PATFOR (Fase 1) encontró que **el modelo de
-> combustible sí existe como dato público**, pero en otra capa:
-> `ms:Regulacion.Incendios.Combustible` = «Modelo de combustible (clas.
-> **Rothermel**)». Es decir: existe, pero es **Rothermel (13 modelos), NO
-> Prometheus (7)**. **Esta tabla no corresponde al dato real** y hay que rehacer
-> `peso_modelo_ponderado` para los 13 modelos de Rothermel antes de que la
-> Fase 3 calcule `comp_estructural`.
->
-> Vías de sustitución si la capa Rothermel no sirviera (solo apuntadas, sin
-> evaluar aquí):
-> - Derivar una aproximación de estructura de vegetación desde **SIOSE** o
->   **Corine Land Cover** (públicos y bien documentados).
-> - Prescindir del factor y compensar con más peso en `continuidad` y
->   `f_tiempo`, asumiendo la pérdida de precisión.
+> La tabla de pesos de abajo ya está **adaptada a esos modelos de Anderson**.
+> Queda pendiente:
+> - **Fase 3:** el *overlay* espacial que asigna un modelo a cada polígono de
+>   `terreno_forestal` (son cartografías distintas; su solape no es trivial). La
+>   cobertura medida está en el inventario.
+> - **Fase 4:** la calibración de los pesos (búsqueda en rejilla, docs/09).
 
-Mapear el esquema del PATFOR a un peso de inflamabilidad 0..1. Si es Prometheus
-(7 modelos), orientación:
+Mapear el código de combustible de Anderson a un peso de inflamabilidad 0..1. De
+los 13 modelos de Anderson, en la cartografía del PATFOR aparecen solo estos
+(ordenados por peso):
 
 | Modelo | Descripción | Peso |
 |---|---|---|
-| 1 | Pastizal | 0,55 |
-| 2 | Matorral bajo (< 0,6 m) | 0,70 |
-| 3 | Matorral medio (0,6–2 m) | 0,90 |
-| 4 | Matorral alto / arbolado con sotobosque continuo | 1,00 |
-| 5 | Arbolado con sotobosque bajo | 0,65 |
-| 6 | Arbolado con sotobosque medio | 0,80 |
-| 7 | Arbolado limpio, sin continuidad vertical | 0,35 |
+| 4 | Matorral alto denso (~2 m) | 1,00 |
+| 7 | Matorral bajo arbolado | 0,90 |
+| 6 | Matorral medio (0,6–1,2 m) | 0,75 |
+| 3 | Pastizal alto (0,75 m) | 0,70 |
+| 2 | Pasto bajo arbolado | 0,60 |
+| 5 | Matorral bajo verde (0,6 m) | 0,55 |
+| 8 | Hojarasca compacta cerrada | 0,25 |
 
-**Verificar el esquema real del PATFOR antes de usar esta tabla.** Si es otro
-(Rothermel 13, Scott & Burgan 40), rehacer el mapeo y documentarlo.
+El código `0` = no combustible (peso 0; fuera del monte). Los modelos ausentes
+en esta cartografía estática, con su peso de partida por si aparecen en una
+revisión futura del PATFOR: 1 pastizal corto (0,45), 9 hojarasca de frondosa o
+pinar (0,45), 10 arbolado con sotobosque y restos (0,85), 11 restos ligeros
+(0,65), 12 restos medios (0,85), 13 restos pesados (0,95).
 
-El modelo 4 es el peligroso: continuidad vertical del suelo a la copa. Es la
-"escalera de combustible", y es la diferencia entre un fuego de superficie que se
-apaga y un fuego de copas que no.
+> **Pesos de partida, NO calibrados.** Derivados de las características de
+> comportamiento publicadas de los modelos de Anderson (1982): velocidad de
+> propagación, longitud de llama y resistencia al control. El modelo 4 es el
+> techo por imposibilidad de ataque directo; el 7 y el 10 puntúan alto por
+> continuidad vertical (combustible escalera), que es lo que convierte un fuego
+> de superficie en fuego de copas. Los pastizales propagan muy rápido pero se
+> detienen en discontinuidades, de ahí que no encabecen la tabla pese a su
+> velocidad. Calibración en Fase 4 mediante la búsqueda en rejilla de docs/09.
 
 ### 2.3 Pendiente
 
