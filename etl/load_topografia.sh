@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Carga de topografía municipal desde el MDT25 (Fase 1). Llamado por seed.sh.
-# Idempotente. Consume las 22 teselas del RELEASE (data/mdt25-v1), NUNCA del
-# CNIG: esa ruta es exclusiva de `make mdt-fetch`.
+# Idempotente. Consume las 23 teselas del RELEASE (data/mdt25-v2), NUNCA del
+# CNIG: esa ruta es exclusiva de `make mdt-fetch`. (La hoja 0669 se añadió en v2
+# para cubrir el borde este de Moncofa; ver etl/reports/mdt25-descarga.md.)
 #
 # Orden obligatorio (ver las 3 precisiones):
-#  (1) MOSAICO antes de la pendiente: gdalbuildvrt de las 22 -> gdaldem sobre el
+#  (1) MOSAICO antes de la pendiente: gdalbuildvrt de las 23 -> gdaldem sobre el
 #      mosaico. Calcular por tesela y mosaicar daría artefactos en los bordes.
 #  (2) gdaldem slope -p -> PORCENTAJE, no grados (45°=100%). El MDT y 25830 están
 #      ambos en metros, así que unidades V y H coinciden: NO hace falta -s.
@@ -15,7 +16,7 @@ set -euo pipefail
 DATA=/data
 MDT="$DATA/mdt25"
 TARBALL="$DATA/mdt25-castellon.tar.gz"
-RELEASE_URL="https://github.com/R0b3r7DEV/guaita/releases/download/data/mdt25-v1/mdt25-castellon.tar.gz"
+RELEASE_URL="https://github.com/R0b3r7DEV/guaita/releases/download/data/mdt25-v2/mdt25-castellon.tar.gz"
 NODATA=-32767
 VRT="$DATA/mdt25.vrt"
 SLOPE="$DATA/slope_pct.tif"
@@ -28,8 +29,8 @@ tif_count() { ls "$MDT"/PNOA-MDT25-ETRS89-HU30-*.TIF 2>/dev/null | wc -l; }
 mkdir -p "$MDT"
 
 # --- 1. Teselas desde el Release (idempotente; NUNCA CNIG) --------------------
-if [[ "$(tif_count)" -ne 22 ]]; then
-  echo "==> Descargando MDT25 del Release (data/mdt25-v1)…"
+if [[ "$(tif_count)" -ne 23 ]]; then
+  echo "==> Descargando MDT25 del Release (data/mdt25-v2)…"
   curl -fsSL -o "$TARBALL" "$RELEASE_URL" \
     || { echo "ERROR: no pude bajar el tar.gz del Release. Publícalo con make mdt-fetch + gh release. NO se usa el CNIG como fallback." >&2; exit 1; }
   tar -xzf "$TARBALL" -C "$MDT"
@@ -40,8 +41,8 @@ fi
 echo "==> Verificando SHA256SUMS del MDT25…"
 ( cd "$MDT" && sha256sum -c SHA256SUMS ) >/dev/null \
   || { echo "ERROR: checksum del MDT25 NO cuadra. Aborto (no uso datos sin verificar)." >&2; exit 1; }
-[[ "$(tif_count)" -eq 22 ]] || { echo "ERROR: $(tif_count) teselas, esperaba 22." >&2; exit 1; }
-echo "    22 teselas verificadas."
+[[ "$(tif_count)" -eq 23 ]] || { echo "ERROR: $(tif_count) teselas, esperaba 23." >&2; exit 1; }
+echo "    23 teselas verificadas."
 
 # --- 2. Mosaico VRT con NoData declarado -------------------------------------
 echo "==> Mosaico (gdalbuildvrt, NoData=$NODATA)…"
@@ -83,7 +84,8 @@ psql -v ON_ERROR_STOP=1 <<SQL
 \set QUIET on
 begin;
 create temp table tmp_topo(ine_code text, pendiente_media_pct numeric,
-  pendiente_p90_pct numeric, frac_solana numeric, altitud_media_m numeric);
+  pendiente_p90_pct numeric, frac_solana numeric, altitud_media_m numeric,
+  n_pix integer);
 \copy tmp_topo from '$DATA/topografia.csv' with (format csv, header true)
 
 truncate topografia_municipio;
@@ -106,6 +108,14 @@ begin
   -- p90 >= media en todos (si no, error en el percentil). (También CHECK en V6.)
   select count(*) into n from topografia_municipio where pendiente_p90_pct < pendiente_media_pct;
   if n <> 0 then raise exception '% municipios con p90 < media', n; end if;
+
+  -- Cobertura mínima del MDT: cada municipio con al menos la MITAD de los píxeles
+  -- esperados (superficie_ha × 16 px/ha, a 625 m²/píxel). Caza huecos de tesela
+  -- (un municipio casi todo NoData se colaría con números degenerados, p. ej.
+  -- frac_solana=1,000; fue el caso de Moncofa antes de añadir la hoja 0669).
+  select count(*) into n from tmp_topo t join municipio m using (ine_code)
+   where t.n_pix < m.superficie_ha * 8;
+  if n <> 0 then raise exception '% municipios con cobertura MDT < 50%% de píxeles esperados (¿hueco de tesela?)', n; end if;
 
   -- Plausibilidad por conocimiento externo (ine_code verificados en el CSV):
   --   Llanos costeros (Plana):  Nules 12082, Moncofa 12077, Almenara 12011.

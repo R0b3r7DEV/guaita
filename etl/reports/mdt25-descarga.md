@@ -1,4 +1,4 @@
-# MDT25 — lista de descarga manual (22 hojas MTN50, Castellón continental)
+# MDT25 — lista de descarga manual (23 hojas MTN50, Castellón continental)
 
 > Generado por la consulta espacial malla MTN50 ∩ geometría continental
 > (`mv_provincia_continental`). No es un inventario del seed: es la **lista de
@@ -20,7 +20,7 @@ Todo debe quedar **nativo en EPSG:25830** (ETRS89/UTM30N) **sin reproyectar el r
 - Hojas de **huso 30** → versión **normal** (ya es 25830).
 - Hojas de **huso 31** (costa este, al este del meridiano 0°) → versión **«huso 30 extendido»**
   que el CNIG ofrece precisamente para tenerlas en 25830.
-- El nombre de fichero objetivo lleva `HU30` en las 22. **El criterio DEFINITIVO de aceptación**
+- El nombre de fichero objetivo lleva `HU30` en las 23. **El criterio DEFINITIVO de aceptación**
   es `gdalinfo` reportando **EPSG:25830**; si alguna sale en 25831, es la variante equivocada.
 
 | Hoja | Nombre | Huso (geometría) | Variante a descargar | Fichero esperado |
@@ -47,6 +47,16 @@ Todo debe quedar **nativo en EPSG:25830** (ETRS89/UTM30N) **sin reproyectar el r
 | 0641 | Castelló de la Plana | 30 | Huso 30 (normal) | `PNOA-MDT25-ETRS89-HU30-0641-LID.TIF` |
 | 0667 | Villar del Arzobispo | 30 | Huso 30 (normal) | `PNOA-MDT25-ETRS89-HU30-0667-LID.TIF` |
 | 0668 | Sagunt/Sagunto | 30 | Huso 30 (normal) | `PNOA-MDT25-ETRS89-HU30-0668-LID.TIF` |
+| 0669 | Moncofa | 30 (borde 0°; servida HU30) | Huso 30 (normal) | `PNOA-MDT25-ETRS89-HU30-0669-LID.TIF` |
+
+**Nota 0669 (Moncofa) — añadida en v2:** vecina este de 0668. El término de
+Moncofa (X 741.317–746.228 en 25830) cae al **este del extent UTM de la tesela
+0668** (que acaba en X≈741.338), así que con solo 0668 el municipio quedaba casi
+todo en NoData y salía con topografía degenerada (`frac_solana=1,000`,
+pendiente≈0). Con 0669 (extent X 740.588–769.938) queda cubierto. La hoja roza el
+meridiano 0°: el IGN la sirve como **HU30 (25830)**; `gdalinfo` lo confirma. El
+loader añadió una **aserción de cobertura mínima de píxeles** para que un hueco de
+tesela así vuelva a fallar ruidosamente en vez de colarse con números plausibles.
 
 **Nota 0616 (Benicàssim):** partida casi exactamente por el meridiano 0° (centroide
 +0,006°). La geometría la daría huso 31, pero el IGN la clasifica huso 30 y sirve su
@@ -57,8 +67,8 @@ MDT25 como HU30 (25830). Se baja la **variante huso 30 normal**. `gdalinfo` lo c
 1. Abre el portal del MDT25 1ª cobertura (URL arriba).
 2. Para cada hoja de la tabla: localízala por su número MTN50 (buscador «Hoja MTN50»
    o navegando el mapa). Descarga la **variante** indicada en su fila.
-3. Guarda las 22 en `data/mdt25/` con el nombre `PNOA-MDT25-ETRS89-HU30-XXXX-LID.TIF`.
-4. Ejecuta `make mdt-fetch`: valida que están las 22, que cada una es EPSG:25830
+3. Guarda las 23 en `data/mdt25/` con el nombre `PNOA-MDT25-ETRS89-HU30-XXXX-LID.TIF`.
+4. Ejecuta `make mdt-fetch`: valida que están las 23, que cada una es EPSG:25830
    (`gdalinfo`), genera `SHA256SUMS` y empaqueta `mdt25-castellon.tar.gz`.
-5. Publica el Release `data/mdt25-v1` con ese tar.gz (comandos aparte).
+5. Publica el Release `data/mdt25-v2` con ese tar.gz (comandos aparte).
 

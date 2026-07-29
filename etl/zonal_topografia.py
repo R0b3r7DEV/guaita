@@ -72,13 +72,14 @@ def main(dem_p, slope_p, aspect_p, zone_p, out):
             round(float(np.percentile(sl, 90)), 2),
             round(float(solana.sum()) / n_tierra, 3),
             round(float(demv[tierra].mean()), 2),
+            n_tierra,                                   # n_pix: para la aserción de cobertura
         ))
 
     rows.sort()
     with open(out, "w", encoding="utf-8", newline="") as f:
         w = csv.writer(f, lineterminator="\n")
         w.writerow(["ine_code", "pendiente_media_pct", "pendiente_p90_pct",
-                    "frac_solana", "altitud_media_m"])
+                    "frac_solana", "altitud_media_m", "n_pix"])
         w.writerows(rows)
     print(f"OK: {len(rows)} municipios -> {out}")
 

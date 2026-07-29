@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# make mdt-fetch — VERIFICA y EMPAQUETA las 22 teselas MDT25 (Opción C).
+# make mdt-fetch — VERIFICA y EMPAQUETA las 23 teselas MDT25 (Opción C).
 #
 # NO descarga nada. Las teselas las bajó el operador a mano a data/mdt25/
 # siguiendo etl/reports/mdt25-descarga.md (el MDT es dato estático anual;
@@ -12,18 +12,20 @@ set -euo pipefail
 
 DIR=/data/mdt25
 ATRIB="MDT25 1ª cobertura CC-BY 4.0 ign.es — © Instituto Geográfico Nacional (IGN)/CNIG"
-# Las 22 hojas MTN50 del Castellón continental (ver la tabla de descarga).
-SHEETS="0519 0520 0521 0544 0545 0546 0547 0569 0570 0571 0591 0592 0593 0594 0614 0615 0616 0639 0640 0641 0667 0668"
+# Las 23 hojas MTN50 del Castellón continental (ver la tabla de descarga). La
+# 0669 es el vecino este de 0668: cubre el borde de Moncofa, que cae fuera del
+# extent UTM de 0668 (añadida en v2; sin ella Moncofa salía degenerado).
+SHEETS="0519 0520 0521 0544 0545 0546 0547 0569 0570 0571 0591 0592 0593 0594 0614 0615 0616 0639 0640 0641 0667 0668 0669"
 
 cd "$DIR" 2>/dev/null || { echo "ERROR: no existe $DIR (¿bajaste las teselas?)." >&2; exit 1; }
 
 fichero() { echo "PNOA-MDT25-ETRS89-HU30-${1}-LID.TIF"; }
 
-# --- 1. Las 22 teselas, con el nombre esperado (HU30 = 25830) -----------------
+# --- 1. Las 23 teselas, con el nombre esperado (HU30 = 25830) -----------------
 missing=()
 for s in $SHEETS; do [[ -f "$(fichero "$s")" ]] || missing+=("$(fichero "$s")"); done
 if [[ ${#missing[@]} -gt 0 ]]; then
-  echo "ERROR: faltan ${#missing[@]} de 22 teselas. 22 o nada:" >&2
+  echo "ERROR: faltan ${#missing[@]} de 23 teselas. 23 o nada:" >&2
   printf '   %s\n' "${missing[@]}" >&2
   echo "Descárgalas según etl/reports/mdt25-descarga.md." >&2
   exit 1
@@ -33,7 +35,7 @@ extra=$(ls PNOA-MDT25-*.TIF 2>/dev/null | grep -vE "HU30-(${alt})-LID\.TIF$" || 
 [[ -n "$extra" ]] && { echo "AVISO: teselas MDT25 no esperadas en $DIR:"; echo "$extra"; }
 
 # --- 2. Cada una en EPSG:25830 (el criterio DEFINITIVO) ----------------------
-echo "==> Verificando EPSG:25830 de las 22 teselas (gdalsrsinfo)…"
+echo "==> Verificando EPSG:25830 de las 23 teselas (gdalsrsinfo)…"
 bad=()
 for s in $SHEETS; do
   f="$(fichero "$s")"
@@ -46,7 +48,7 @@ if [[ ${#bad[@]} -gt 0 ]]; then
   echo "Las de huso 31 deben ser la variante «huso 30 extendido» (ver la tabla)." >&2
   exit 1
 fi
-echo "    las 22 en EPSG:25830. OK."
+echo "    las 23 en EPSG:25830. OK."
 
 # --- 3. SHA256SUMS -----------------------------------------------------------
 echo "==> Generando SHA256SUMS…"
@@ -55,7 +57,7 @@ sha256sum "${files[@]}" > SHA256SUMS
 
 # --- 4. Procedencia ----------------------------------------------------------
 cat > PROVENANCE.txt <<EOF
-MDT25 — Castellón continental (22 hojas MTN50)
+MDT25 — Castellón continental (23 hojas MTN50)
 Producto:    MDT25 1ª cobertura (PNOA-MDT25). codSerie CNIG: 02107.
 Fuente:      Centro de Descargas del CNIG / Instituto Geográfico Nacional.
 Empaquetado: $(date -u +%Y-%m-%d)
@@ -70,4 +72,4 @@ EOF
 echo "==> Empaquetando mdt25-castellon.tar.gz…"
 tar --sort=name -czf mdt25-castellon.tar.gz PROVENANCE.txt SHA256SUMS "${files[@]}"
 echo "==> OK: $DIR/mdt25-castellon.tar.gz ($(du -h mdt25-castellon.tar.gz | cut -f1))"
-echo "    Publícalo en el Release 'data/mdt25-v1' (comandos aparte)."
+echo "    Publícalo en el Release 'data/mdt25-v2' (comandos aparte)."
