@@ -187,9 +187,9 @@ with cov as (
   where st_intersects(t.geom, m.geom)
 ),
 tot as (select sum(st_area(geom)) as a from terreno_forestal)
-select round(tot.a/10000)                    as ha_terreno_forestal,
-       round(cov.a/10000)                     as ha_con_modelo,
-       round(100.0 * cov.a / tot.a, 1)        as pct_cobertura
+select round((tot.a/10000)::numeric)                 as ha_terreno_forestal,
+       round((cov.a/10000)::numeric)                 as ha_con_modelo,
+       round((100.0 * cov.a / tot.a)::numeric, 1)    as pct_cobertura
 from cov, tot;
 SQL
 echo '```' >> "$INVENTARIO"
