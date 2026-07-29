@@ -17,6 +17,10 @@
 #
 # Fuente GeoPackage (UTF-8, SRID 25830 nativo): sin los problemas de shapefile
 # (ISO-8859-1, truncado de campos a 10 caracteres). No aplican.
+#
+# Rendimiento: el clip y las agregaciones se hacen con máscaras SUBDIVIDIDAS e
+# indexadas (GiST) y join espacial con `&&`. Intersectar contra una geometría
+# única y enorme sin prefiltro hacía que el seed no terminara en 20 min.
 set -euo pipefail
 
 DATA=/data
@@ -46,25 +50,46 @@ ogr2ogr -f PostgreSQL "$PG" "$GPKG" "SF.Forestal" \
   -t_srs EPSG:25830 -nlt MULTIPOLYGON \
   -lco GEOMETRY_NAME=geom --config PG_USE_COPY YES
 
-# --- 3. Clip contra continental + buffer, ST_Subdivide, carga idempotente -----
-echo "==> Recortando contra continental + ${BUFFER_M} m y aplicando ST_Subdivide (≤256 vértices)…"
+# --- 3a. Máscaras subdivididas e indexadas (una sola vez) ---------------------
+echo "==> Preparando máscaras subdivididas + índices GiST…"
+run_sql <<SQL
+\set QUIET on
+drop table if exists _mask_buf, _prov_strict, _forest_sub;
+
+-- Máscara de clip: continente + ${BUFFER_M} m, subdividido (piezas ≤256 vért.).
+create table _mask_buf as
+  select st_subdivide(st_buffer(geom, ${BUFFER_M}), 256) as g from mv_provincia_continental;
+create index on _mask_buf using gist (g);
+
+-- Límite provincial ESTRICTO (unión de municipios), subdividido (para el
+-- desglose dentro/fuera del buffer).
+create table _prov_strict as
+  select st_subdivide(st_union(geom), 256) as g from municipio;
+create index on _prov_strict using gist (g);
+
+-- Forestal de origen, saneado y subdividido.
+create table _forest_sub as
+  select st_subdivide(st_makevalid(geom), 256) as g from stg_patfor;
+create index on _forest_sub using gist (g);
+
+analyze _mask_buf; analyze _prov_strict; analyze _forest_sub;
+SQL
+
+# --- 3b. Clip + carga idempotente (transacción con aserciones) ----------------
+echo "==> Recortando (join espacial con &&) + carga…"
 psql -v ON_ERROR_STOP=1 <<SQL
 \set QUIET on
 begin;
 truncate terreno_forestal restart identity;
 
-with buf as (
-  select st_buffer(geom, ${BUFFER_M}) as g from mv_provincia_continental
-),
-clipped as (
-  select st_collectionextract(st_makevalid(st_intersection(s.geom, b.g)), 3) as geom
-  from stg_patfor s, buf b
-  where st_intersects(s.geom, b.g)
-)
 insert into terreno_forestal (geom, modelo_combustible, modelo_norm, source)
-select st_multi(st_subdivide(geom, 256)), null, null, 'PATFOR:SF.Forestal (ICV/GVA)'
-from clipped
-where geom is not null and not st_isempty(geom);
+select st_multi(g), null, null, 'PATFOR:SF.Forestal (ICV/GVA)'
+from (
+  select st_collectionextract(st_intersection(f.g, m.g), 3) as g
+  from _forest_sub f join _mask_buf m on f.g && m.g
+  where st_intersects(f.g, m.g)
+) x
+where g is not null and not st_isempty(g);
 
 -- ===================== ASERCIONES (fallan ruidosamente) =====================
 do \$\$
@@ -79,18 +104,21 @@ begin
   select count(*) into n from terreno_forestal where not st_isvalid(geom);
   if n <> 0 then raise exception '% geometrías inválidas (ST_IsValid)', n; end if;
 
-  -- Ninguna geometría fuera del continental + buffer (si el clip hubiera fallado).
-  select count(*) into n
-  from terreno_forestal tf,
-       (select st_buffer(geom, ${BUFFER_M}) g from mv_provincia_continental) b
-  where not st_coveredby(tf.geom, b.g);
-  if n <> 0 then raise exception '% geometrías fuera de continental+${BUFFER_M}m (¿clip mal?)', n; end if;
+  -- Nada mar adentro: el extent de terreno_forestal debe caer dentro del extent
+  -- del buffer (+1 m tolerancia). Si el clip fallara e incluyera las Columbretes
+  -- (X~815520), el extent se saldría del buffer (maxX~802748) y salta. O(1).
+  if not st_within(
+       st_envelope((select st_extent(geom)::geometry from terreno_forestal)),
+       st_expand(st_envelope((select st_extent(g)::geometry from _mask_buf)), 1)
+     ) then
+    raise exception 'terreno_forestal se sale del continental+${BUFFER_M}m (¿clip mal / mar adentro?)';
+  end if;
 
   -- Total dentro del límite provincial ESTRICTO: plausible 200k..700k ha
   -- (la superficie forestal de Castellón ronda el 55-65% de 663.822 ha).
-  select round(sum(st_area(st_intersection(tf.geom, prov.g)))/10000) into ha
-  from terreno_forestal tf, (select st_union(geom) g from municipio) prov
-  where st_intersects(tf.geom, prov.g);
+  select round(sum(st_area(st_intersection(tf.geom, p.g)))/10000) into ha
+  from terreno_forestal tf join _prov_strict p on tf.geom && p.g
+  where st_intersects(tf.geom, p.g);
   if ha < 200000 or ha > 700000 then
     raise exception 'ha forestal dentro del límite estricto = % fuera de [200000, 700000]', ha;
   end if;
@@ -175,13 +203,19 @@ SQL
 } >> "$INVENTARIO"
 run_sql >> "$INVENTARIO" <<'SQL'
 \pset border 2
-with prov as (select st_union(geom) g from municipio)
-select
-  round(sum(st_area(tf.geom))/10000)                                   as ha_total_cargado,
-  round(sum(st_area(st_intersection(tf.geom, prov.g)))/10000)          as ha_dentro_limite_estricto,
-  round((sum(st_area(tf.geom)) - sum(st_area(st_intersection(tf.geom, prov.g))))/10000)
-                                                                       as ha_aportadas_por_buffer
-from terreno_forestal tf, prov;
+with dentro as (
+  select round(sum(st_area(st_intersection(tf.geom, p.g)))/10000) as ha
+  from terreno_forestal tf join _prov_strict p on tf.geom && p.g
+  where st_intersects(tf.geom, p.g)
+),
+total as (select round(sum(st_area(geom))/10000) as ha from terreno_forestal)
+select total.ha        as ha_total_cargado,
+       dentro.ha       as ha_dentro_limite_estricto,
+       total.ha - dentro.ha as ha_aportadas_por_buffer
+from total, dentro;
 SQL
 echo '```' >> "$INVENTARIO"
 echo "==> inventario escrito en $INVENTARIO."
+
+# --- 5. Limpieza de máscaras auxiliares ---------------------------------------
+run_sql -c "drop table if exists _mask_buf, _prov_strict, _forest_sub, stg_patfor;"
