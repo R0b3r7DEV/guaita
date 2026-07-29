@@ -28,6 +28,9 @@ seed:          ## [Fase 1] Carga idempotente de geodatos estáticos (contenedor 
 comarcas:      ## [Fase 1] Regenera etl/mappings/comarcas_castellon.csv desde el PEGV (one-shot, deliberado)
 	docker compose --profile etl run --rm etl bash ./build_comarcas.sh
 
+mdt-fetch:     ## [Fase 1] Verifica y empaqueta las 22 teselas MDT25 de data/mdt25/ (deliberado, sin descarga)
+	docker compose --profile etl run --rm etl bash ./mdt_fetch.sh
+
 # --- Aún no implementados; pertenecen a fases posteriores del roadmap ---
 ingest:        ## [Fase 2] Primera pasada de feeds vivos
 	@echo "ingest: feeds vivos — Fase 2, aún no implementado." && exit 1
