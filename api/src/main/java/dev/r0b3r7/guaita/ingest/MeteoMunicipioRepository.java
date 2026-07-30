@@ -19,7 +19,7 @@ public class MeteoMunicipioRepository {
 
   private static final String PUNTOS_SQL =
       """
-      select ine_code, st_x(pt) as lon, st_y(pt) as lat
+      select s.ine_code, st_x(s.pt) as lon, st_y(s.pt) as lat, t.altitud_media_m
       from (
         select m.ine_code, st_transform(st_pointonsurface(g.geom), 4326) as pt
         from municipio m
@@ -27,7 +27,8 @@ public class MeteoMunicipioRepository {
           select d.geom from st_dump(m.geom) d order by st_area(d.geom) desc limit 1
         ) g
       ) s
-      order by ine_code
+      join topografia_municipio t on t.ine_code = s.ine_code
+      order by s.ine_code
       """;
 
   private static final String FUERA_SQL =
@@ -44,15 +45,15 @@ public class MeteoMunicipioRepository {
       """
       insert into meteo_municipio
         (ine_code, fecha, temp_12utc_c, hr_12utc_pct, viento_12utc_kmh, precip_24h_mm,
-         interpolado, n_estaciones, source, source_url)
+         elevacion_celda_m, delta_altitud_m, source, source_url)
       values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       on conflict (ine_code, fecha) do update set
         temp_12utc_c = excluded.temp_12utc_c,
         hr_12utc_pct = excluded.hr_12utc_pct,
         viento_12utc_kmh = excluded.viento_12utc_kmh,
         precip_24h_mm = excluded.precip_24h_mm,
-        interpolado = excluded.interpolado,
-        n_estaciones = excluded.n_estaciones,
+        elevacion_celda_m = excluded.elevacion_celda_m,
+        delta_altitud_m = excluded.delta_altitud_m,
         source = excluded.source,
         source_url = excluded.source_url,
         fetched_at = now()
@@ -64,13 +65,21 @@ public class MeteoMunicipioRepository {
     this.jdbc = jdbc;
   }
 
-  /** Punto de consulta (lon/lat en 4326) de cada municipio, sobre su continente. */
-  public List<OpenMeteoClient.Punto> puntosDeConsulta() {
+  /**
+   * Punto de consulta (lon/lat en 4326) de cada municipio sobre su continente, con su altitud media
+   * (para pedir esa {@code elevation}). {@code elevacionCeldaM} queda en 0: la rellena la petición
+   * de referencia del cliente ({@code elevacionesNativas}).
+   */
+  public List<PuntoMeteo> puntosDeConsulta() {
     return jdbc.query(
         PUNTOS_SQL,
         (rs, n) ->
-            new OpenMeteoClient.Punto(
-                rs.getString("ine_code"), rs.getDouble("lon"), rs.getDouble("lat")));
+            new PuntoMeteo(
+                rs.getString("ine_code"),
+                rs.getDouble("lon"),
+                rs.getDouble("lat"),
+                rs.getDouble("altitud_media_m"),
+                0.0));
   }
 
   /** Nº de municipios cuyo punto de consulta NO cae dentro de su término (debe ser 0). */
@@ -95,8 +104,8 @@ public class MeteoMunicipioRepository {
             m.hr12utcPct(),
             m.viento12utcKmh(),
             m.precip24hMm(),
-            m.interpolado(),
-            m.nEstaciones(),
+            m.elevacionCeldaM(),
+            m.deltaAltitudM(),
             m.source(),
             m.sourceUrl()
           });

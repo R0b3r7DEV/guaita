@@ -15,8 +15,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
  * Test del repositorio (Testcontainers). Siembra un municipio con continente (grande) + isla lejana
- * (pequeña), como Castelló con las Columbretes, para comprobar que el punto de consulta cae en el
- * continente; y que el upsert es idempotente por {@code (ine_code, fecha)}.
+ * (pequeña), como Castelló con las Columbretes, y su fila de topografía (altitud media), para
+ * comprobar que el punto de consulta cae en el continente y trae la altitud; y que el upsert es
+ * idempotente por {@code (ine_code, fecha)}.
  */
 @Import(TestcontainersConfiguration.class)
 @SpringBootTest
@@ -28,6 +29,7 @@ class MeteoMunicipioRepositoryTest {
   @BeforeEach
   void sembrar() {
     jdbc.update("delete from meteo_municipio where ine_code = '12040'");
+    jdbc.update("delete from topografia_municipio where ine_code = '12040'");
     jdbc.update("delete from municipio where ine_code = '12040'");
     // Continente ~24 km² alrededor de Castelló + una isla diminuta muy al este (las Columbretes).
     jdbc.update(
@@ -36,23 +38,30 @@ class MeteoMunicipioRepositoryTest {
             + "((750000 4428000,756000 4428000,756000 4432000,750000 4432000,750000 4428000)),"
             + "((789000 4435000,789200 4435000,789200 4435200,789000 4435200,789000 4435000)))',"
             + "25830), 2404, 1)");
+    jdbc.update(
+        "insert into topografia_municipio"
+            + " (ine_code, pendiente_media_pct, pendiente_p90_pct, frac_solana, altitud_media_m)"
+            + " values ('12040', 5.0, 10.0, 0.5, 800.0)");
   }
 
   @Test
-  void elPuntoDeConsultaCaeEnElContinenteNoEnLaIsla() {
-    List<OpenMeteoClient.Punto> puntos = repo.puntosDeConsulta();
-    OpenMeteoClient.Punto p =
+  void elPuntoDeConsultaCaeEnElContinenteYTraeLaAltitud() {
+    List<PuntoMeteo> puntos = repo.puntosDeConsulta();
+    PuntoMeteo p =
         puntos.stream().filter(x -> x.ineCode().equals("12040")).findFirst().orElseThrow();
     // El continente cae en ~lon [-0,06..0,0]; la isla, mucho más al este (~lon 0,4).
     assertTrue(p.lon() < 0.2, "el punto se fue a la isla (lon=" + p.lon() + ")");
+    assertEquals(800.0, p.altitudMediaM(), 1e-9, "no trajo la altitud media");
     assertEquals(0, repo.municipiosConPuntoFuera(), "algún punto cae fuera de su término");
   }
 
   @Test
   void elUpsertEsIdempotentePorIneCodeYFecha() {
     LocalDate f = LocalDate.parse("2023-08-14");
-    MeteoMunicipio v1 = new MeteoMunicipio("12040", f, 27.7, 48, 19.2, 0.0, true, 1, "S", "u1");
-    MeteoMunicipio v2 = new MeteoMunicipio("12040", f, 30.0, 40, 25.0, 1.5, true, 2, "S", "u2");
+    MeteoMunicipio v1 =
+        new MeteoMunicipio("12040", f, 27.7, 48, 19.2, 0.0, 600.0, 200.0, "S", "u1");
+    MeteoMunicipio v2 =
+        new MeteoMunicipio("12040", f, 30.0, 40, 25.0, 1.5, 600.0, 200.0, "S", "u2");
     repo.upsertAll(List.of(v1));
     repo.upsertAll(List.of(v2)); // mismo (ine_code, fecha) -> UPDATE, no duplica
 

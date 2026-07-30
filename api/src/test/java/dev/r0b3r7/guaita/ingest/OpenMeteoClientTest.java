@@ -13,6 +13,7 @@ import java.net.http.HttpClient;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,13 +21,14 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Test de la capa HTTP APARTE, con un servidor local (JDK {@code HttpServer}) que sirve el fixture.
- * Verifica el camino fetch → parse → map de punta a punta sin salir a la red, y el reintento con
- * backoff ante errores reintentables.
+ * Verifica el camino fetch → parse → map de punta a punta sin salir a la red, el reintento con
+ * backoff y la petición de referencia de cotas nativas.
  */
 class OpenMeteoClientTest {
 
-  private static final OpenMeteoClient.Punto MORELLA =
-      new OpenMeteoClient.Punto("12080", -0.101, 40.619);
+  // El fixture (Morella) se pidió sin elevation -> payload.elevation = 1010. La altitud media se
+  // fija en 1010 para que el guard del mapper pase; la celda a 800 -> delta 210.
+  private static final PuntoMeteo MORELLA = new PuntoMeteo("12080", -0.101, 40.619, 1010.0, 800.0);
 
   private HttpServer server;
   private String baseUrl;
@@ -80,7 +82,16 @@ class OpenMeteoClientTest {
     assertEquals(27.7, d14.temp12utcC(), 1e-9);
     assertEquals("12080", d14.ineCode());
     assertTrue(d14.sourceUrl().contains("era5_seamless"), "la URL de procedencia fija el modelo");
-    assertTrue(d14.sourceUrl().contains("wind_speed_unit=kmh"), "y fija las unidades de viento");
+    assertTrue(d14.sourceUrl().contains("wind_speed_unit=kmh"), "y las unidades de viento");
+    assertTrue(d14.sourceUrl().contains("elevation="), "y el downscaling a la altitud media");
+  }
+
+  @Test
+  void laPeticionDeReferenciaDevuelveLaCotaNativa() {
+    OpenMeteoClient client = new OpenMeteoClient(baseUrl);
+    Map<String, Double> nativas =
+        client.elevacionesNativas(List.of(MORELLA), LocalDate.parse("2023-08-14"));
+    assertEquals(1010.0, nativas.get("12080"), 1e-9);
   }
 
   @Test

@@ -43,15 +43,17 @@ Detalle: desglose de los tres componentes, códigos FWI del día, serie de los
   "componentes": { "meteo": 88.1, "estructural": 71.2, "vulnerabilidad": 66.0 },
   "fwi": { "ffmc": 92.3, "dmc": 84.1, "dc": 512.7, "isi": 14.2, "bui": 96.5, "fwi": 41.8 },
   "banderas": { "regla303030": true, "vientoAlineado": true },
-  "calidadDato": { "interpolado": false, "estaciones": 1 },
+  "calidadDato": { "deltaAltitudM": 132.0, "elevacionCeldaM": 912.0 },
   "iufResumen": { "total": 1240, "critico": 18, "incumple": 96, "ajustado": 41 },
   "versionModelo": "v1.0"
 }
 ```
 
-`calidadDato` no es decorativo: un índice interpolado desde tres estaciones
-lejanas merece menos confianza y el usuario debe verlo. Se sirve desde
-`meteo_municipio` (`interpolado`, `n_estaciones`), no desde `fwi_municipio`
+`calidadDato` no es decorativo: la fuente es un reanálisis en rejilla (ADR-07) y
+`deltaAltitudM` es cuánto tuvo que downscalear el modelo desde la cota de su celda
+(`elevacionCeldaM`) hasta la altitud media del municipio. Un `deltaAltitudM`
+grande (Vistabella, Villahermosa) merece menos confianza que uno ≈ 0 (Nules) y el
+usuario debe verlo. Se sirve desde `meteo_municipio`, no desde `fwi_municipio`
 (ver doc 03).
 
 ### `GET /municipios/{ineCode}/serie?desde=&hasta=`

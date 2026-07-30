@@ -28,14 +28,24 @@ public final class OpenMeteoMapper {
   private static final int WINDOW_HOURS = 24;
 
   /**
-   * Convierte el payload de una localización en filas diarias para {@code ineCode}. La procedencia
-   * es {@code sourceUrl} (la URL exacta de la petición). Lanza si el lote no valida.
+   * Convierte el payload de una localización en filas diarias para el municipio {@code p}. La
+   * procedencia es {@code sourceUrl}. Comprueba que el payload viene en UTC y downscaleado a la
+   * altitud media (que se pidió {@code elevation}, no la cota nativa). Lanza si el lote no valida.
    */
-  public List<MeteoMunicipio> map(String ineCode, String sourceUrl, OpenMeteoArchive a) {
+  public List<MeteoMunicipio> map(PuntoMeteo p, String sourceUrl, OpenMeteoArchive a) {
     if (a.utcOffsetSeconds() != 0) {
       throw new IllegalArgumentException(
           "payload no está en UTC (utc_offset=" + a.utcOffsetSeconds() + "): exige timezone=GMT");
     }
+    if (Math.abs(a.elevation() - p.altitudMediaM()) > 1.0) {
+      throw new IllegalArgumentException(
+          "payload downscaleado a "
+              + a.elevation()
+              + " m, esperaba la altitud media "
+              + p.altitudMediaM()
+              + " m: ¿faltó elevation en la petición?");
+    }
+    double delta = p.altitudMediaM() - p.elevacionCeldaM();
     OpenMeteoArchive.Hourly h = a.hourly();
     List<String> time = h.time();
     List<MeteoMunicipio> out = new ArrayList<>();
@@ -54,7 +64,17 @@ public final class OpenMeteoMapper {
       }
       validar(fecha, temp, hr, viento, precip);
       out.add(
-          new MeteoMunicipio(ineCode, fecha, temp, hr, viento, precip, true, 1, SOURCE, sourceUrl));
+          new MeteoMunicipio(
+              p.ineCode(),
+              fecha,
+              temp,
+              hr,
+              viento,
+              precip,
+              p.elevacionCeldaM(),
+              delta,
+              SOURCE,
+              sourceUrl));
     }
     return out;
   }

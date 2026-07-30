@@ -10,8 +10,10 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.StringJoiner;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -23,9 +25,6 @@ import java.util.concurrent.ThreadLocalRandom;
  * jitter en fallos de red, 5xx y 429; los 4xx (salvo 429) NO se reintentan.
  */
 public final class OpenMeteoClient {
-
-  /** Un municipio y su punto de consulta (lon/lat WGS84; ST_PointOnSurface del continente). */
-  public record Punto(String ineCode, double lon, double lat) {}
 
   private static final String HOURLY =
       "temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation";
@@ -64,11 +63,11 @@ public final class OpenMeteoClient {
    * Descarga y mapea la meteo diaria de {@code [start, end]} para los puntos dados. Pide un día
    * extra por delante ({@code start-1}) para cerrar la ventana de lluvia de 24 h del primer día.
    */
-  public List<MeteoMunicipio> fetch(List<Punto> puntos, LocalDate start, LocalDate end) {
+  public List<MeteoMunicipio> fetch(List<PuntoMeteo> puntos, LocalDate start, LocalDate end) {
     if (puntos.isEmpty()) {
       return List.of();
     }
-    String url = buildUrl(puntos, start.minusDays(1), end);
+    String url = buildUrl(puntos, start.minusDays(1), end, true);
     List<OpenMeteoArchive> locs = parse(get(url));
     if (locs.size() != puntos.size()) {
       throw new IllegalStateException(
@@ -76,32 +75,53 @@ public final class OpenMeteoClient {
     }
     List<MeteoMunicipio> out = new ArrayList<>();
     for (int i = 0; i < puntos.size(); i++) {
-      out.addAll(mapper.map(puntos.get(i).ineCode(), url, locs.get(i)));
+      out.addAll(mapper.map(puntos.get(i), url, locs.get(i)));
     }
     return out;
   }
 
-  private String buildUrl(List<Punto> puntos, LocalDate start, LocalDate end) {
+  /**
+   * Cota NATIVA del modelo en cada punto (petición SIN {@code elevation}). Estática por municipio;
+   * alimenta la calidad del dato (delta de altitud). Devuelve {@code ine_code -> elevación (m)}.
+   */
+  public Map<String, Double> elevacionesNativas(List<PuntoMeteo> puntos, LocalDate dia) {
+    if (puntos.isEmpty()) {
+      return Map.of();
+    }
+    List<OpenMeteoArchive> locs = parse(get(buildUrl(puntos, dia, dia, false)));
+    Map<String, Double> out = new LinkedHashMap<>();
+    for (int i = 0; i < puntos.size(); i++) {
+      out.put(puntos.get(i).ineCode(), locs.get(i).elevation());
+    }
+    return out;
+  }
+
+  private String buildUrl(
+      List<PuntoMeteo> puntos, LocalDate start, LocalDate end, boolean conElevation) {
     StringJoiner lat = new StringJoiner(",");
     StringJoiner lon = new StringJoiner(",");
-    for (Punto p : puntos) {
+    StringJoiner elev = new StringJoiner(",");
+    for (PuntoMeteo p : puntos) {
       lat.add(fmt(p.lat()));
       lon.add(fmt(p.lon()));
+      elev.add(String.format(Locale.ROOT, "%.1f", p.altitudMediaM()));
     }
-    return baseUrl
-        + "?latitude="
-        + lat
-        + "&longitude="
-        + lon
-        + "&start_date="
-        + start
-        + "&end_date="
-        + end
-        + "&hourly="
-        + HOURLY
-        + "&models=era5_seamless"
-        + "&wind_speed_unit=kmh"
-        + "&timezone=GMT";
+    String url =
+        baseUrl
+            + "?latitude="
+            + lat
+            + "&longitude="
+            + lon
+            + "&start_date="
+            + start
+            + "&end_date="
+            + end
+            + "&hourly="
+            + HOURLY
+            + "&models=era5_seamless"
+            + "&wind_speed_unit=kmh"
+            + "&timezone=GMT";
+    return conElevation ? url + "&elevation=" + elev : url;
   }
 
   private static String fmt(double v) {

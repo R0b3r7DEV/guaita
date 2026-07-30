@@ -124,23 +124,33 @@ Puntos que hay que respetar sí o sí:
 > reimplementación en Python usada para inspeccionar no es validación
 > independiente: mismo lector, mismas ecuaciones.)
 
-### Asignación meteorológica a municipios
+### Asignación meteorológica a municipios (fuente en rejilla, ADR-07)
 
-No todos los municipios tienen estación. Estrategia por orden:
+La fuente es un reanálisis en rejilla (Open-Meteo ERA5-Seamless), no estaciones.
+La asignación por municipio:
 
-1. Si hay estación dentro del término → usarla.
-2. Si no → **IDW (ponderación por inverso de la distancia)** con las 3 estaciones
-   más cercanas, con **corrección altitudinal de temperatura** aplicando un
-   gradiente de −0,65 °C / 100 m sobre la diferencia de altitud entre la estación
-   y la altitud media del municipio.
-3. Persistir la meteo asignada y su calidad en `meteo_municipio` (`interpolado`
-   sí/no y `n_estaciones` usadas). Un dato interpolado en Vistabella desde
-   estaciones de la costa es mucho menos fiable y hay que poder saberlo.
-   `fwi_municipio` consume esta tabla; la calidad es propiedad de la meteo, no
-   del FWI (ver doc 03).
+1. **Punto**: `ST_PointOnSurface` del continente del término (docs/03), en 4326.
+2. **Downscaling altitudinal — lo hace Open-Meteo, no nosotros.** Se pide con
+   `elevation = altitud_media_m` (de `topografia_municipio`) y Open-Meteo
+   downscalea temperatura **y humedad** a esa altitud con su lapse rate estándar
+   (**−0,65 °C/100 m, verificado empíricamente**). Aplicar nuestra corrección
+   encima sería **doble contabilidad**; recalcular la HR con Magnus sería pelear
+   contra un par (T, HR) que Open-Meteo ya devuelve **termodinámicamente
+   consistente** (al bajar T mantiene la HR y baja el punto de rocío).
+3. **Calidad del dato** (`meteo_municipio`, docs/03): con rejilla no hay
+   estaciones; lo que importa es cuánto tuvo que downscalear el modelo, es decir
+   la discrepancia de altitud entre su celda nativa y el municipio:
+   `elevacion_celda_m` (petición de referencia sin `elevation`) y
+   `delta_altitud_m = altitud_media_m − elevacion_celda_m`. Vistabella (delta
+   grande) es menos fiable que Nules (delta ≈ 0). El endpoint del doc 06 lo sirve
+   como `calidadDato`.
 
-La corrección altitudinal importa de verdad aquí: hay 1.800 m de desnivel entre
-Penyagolosa y la Plana.
+> **⚠️ Limitación conocida (ADR-07).** El **viento y la precipitación NO se
+> downscalean** por altitud (Open-Meteo solo lo hace con temperatura/humedad; el
+> viento viene de ERA5 a ~25 km). El viento en cumbre es bastante mayor que el de
+> la celda promediada, así que el **ISI queda sistemáticamente subestimado en los
+> municipios de montaña**. Es una limitación, no un bug: documentada aquí y a
+> tener en cuenta al leer el índice en el Maestrat y Espadán.
 
 ### Normalización a 0..100
 
