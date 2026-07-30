@@ -4,8 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.r0b3r7.guaita.TestcontainersConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,12 +53,14 @@ class MapaControllerTest {
             .getResponse()
             .getContentAsString();
 
+    // body = {"bbox":[minLon,minLat,maxLon,maxLat]}. Se parsea sin dependencia JSON extra.
     // Huella de ~2 km alrededor de Castelló: bbox aprox. lon[-0,06..-0,01], lat[39,97..40,00].
-    JsonNode bbox = new ObjectMapper().readTree(body).get("bbox");
-    double minLon = bbox.get(0).asDouble();
-    double minLat = bbox.get(1).asDouble();
-    double maxLon = bbox.get(2).asDouble();
-    double maxLat = bbox.get(3).asDouble();
+    String inner = body.substring(body.indexOf('[') + 1, body.indexOf(']'));
+    String[] p = inner.split(",");
+    double minLon = Double.parseDouble(p[0].trim());
+    double minLat = Double.parseDouble(p[1].trim());
+    double maxLon = Double.parseDouble(p[2].trim());
+    double maxLat = Double.parseDouble(p[3].trim());
     assertTrue(minLon > -1.0 && minLon < 1.0, "minLon fuera de la provincia: " + minLon);
     assertTrue(maxLon > -1.0 && maxLon < 1.0, "maxLon fuera de la provincia: " + maxLon);
     assertTrue(minLat > 38.0 && minLat < 42.0, "minLat fuera de la provincia: " + minLat);
