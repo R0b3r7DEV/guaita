@@ -59,14 +59,19 @@ ruidosamente en el seed.
 
 ## Fase 2 · Meteorología y FWI (semanas 4–5)
 
-- [ ] Cliente de Open-Meteo para reanálisis histórico (más fácil que AEMET).
-- [ ] Cliente de AEMET OpenData para operación diaria, con el patrón de dos
-      peticiones.
-- [ ] `FwiCalculator` implementado desde Van Wagner 1987.
-- [ ] **Tests con vectores de referencia. Esta casilla no se marca sin ellos.**
-- [ ] Interpolación IDW + corrección altitudinal → asignación por municipio.
-- [ ] Job `@Scheduled` diario a las 14:00 local.
-- [ ] Backfill del histórico: 2005–2026.
+- [x] Migración V7: tablas `meteo_municipio` y `fwi_municipio`.
+- [x] `FwiCalculator` desde Van Wagner & Pickett 1985 (ecuaciones exactas).
+- [x] **Tests con vectores de referencia**: reproduce la tabla de ejemplo de la
+      publicación (49 días) con `max|diff| < 0,1` en los seis códigos. (Contraste
+      cffdrs en R: cobertura pendiente, sin R en el entorno; ver docs/04.)
+- [ ] **Fuente única Open-Meteo ERA5-Seamless** (ADR-07), para histórico Y
+      operación. AEMET NO es entrada: pasa a contraste externo en Fase 4.
+- [ ] Asignación por municipio desde la rejilla de reanálisis (celda/IDW de las
+      celdas vecinas) + corrección altitudinal de temperatura. Rellena
+      `interpolado`/`n_estaciones` (calidad del dato).
+- [ ] Backfill del histórico (job manual en Actions, como `seed.yml`; reanudable).
+- [ ] Job `@Scheduled` diario: calcula el último día disponible (~D-5) y lo
+      etiqueta con su fecha. Zona horaria fijada explícitamente, no heredada.
 
 **Criterio:** `fwi_municipio` tiene una serie completa de 20 años para los 135
 municipios y el job diario añade una fila nueva sin intervención.

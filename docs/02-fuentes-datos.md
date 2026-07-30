@@ -73,10 +73,37 @@ Endpoints de interés:
   `docs/04-indice-peligro.md`, sección "asignación meteorológica".
 - Los códigos de municipio son INE, no catastrales.
 
-**Alternativa/complemento.** Open-Meteo no requiere clave y da reanálisis
-histórico horario, que para el backtest es más cómodo que pelearse con el
-archivo de AEMET. Considerar usar Open-Meteo para histórico y AEMET para
-operación diaria.
+**Rol reasignado (ADR-07).** Tras analizar el problema de discontinuidad de
+fuentes, **AEMET NO es la entrada del FWI**: la entrada es Open-Meteo (una sola
+fuente para histórico y operación, ver abajo). AEMET queda como **contraste
+externo** en la validación (Fase 4), junto a PREVIFOC (§7): comparar el índice de
+GUAITA contra observación real es más valioso —e independiente— que usarla como
+entrada con un sesgo sistemático distinto al del reanálisis.
+
+## 2-bis. Open-Meteo — FUENTE METEO PRIMARIA (reanálisis)
+
+**Para qué.** Las cuatro variables del FWI (temperatura, HR, viento, precipitación
+24 h) a las **12:00 UTC** (criterio EFFIS, docs/04), para **histórico Y operación**
+(ADR-07). Sin clave.
+
+**Modelo: ERA5-Seamless.** Temperatura y HR de **ERA5-Land** (~11 km, donde más
+pesa el desnivel de 1.800 m); viento y precipitación de **ERA5** (~25 km, porque
+ERA5-Land no trae viento a 10 m). Cobertura 1940→. Endpoint `/v1/archive`.
+
+**Trampas verificadas.**
+- **Latencia ~5 días**: el archivo de reanálisis no tiene "hoy". El índice va ~5
+  días atrasado, etiquetado con su fecha (aceptable: GUAITA no es emergencia, T7).
+  La API de *forecast* de Open-Meteo usa modelos NWP distintos: **no mezclar** con
+  el archivo o se reabre la discontinuidad (ADR-07).
+- **Zona horaria**: la API horaria devuelve **UTC** por defecto (`timezone=GMT`).
+  Se indexa la hora 12 UTC sin pasar `timezone`. La conversión, en un solo sitio.
+- **Rate limit**: respetuoso, backoff exponencial, `User-Agent` identificable.
+  135 municipios/día es trivial; el backfill (un rango largo por punto en una
+  petición) también cabe de sobra.
+- Alternativas descartadas: **ERA5-Land solo** (sin viento); **CERRA** (5 km, gran
+  resolución, pero acaba en jun-2021 → solo histórico → reabriría la
+  discontinuidad); **ECMWF IFS** (9 km, tiempo real, pero desde 2017 y modelo
+  operacional no homogéneo para percentiles).
 
 ---
 

@@ -155,6 +155,42 @@ ninguna tesela.
 fábrica con `feature-state`. El encuadre inicial del visor se pide a
 `/mapa/extent` (envolvente continental, no la administrativa: docs/06).
 
+---
+
+### ADR-07 — Fuente meteo única (reanálisis) para histórico Y operación
+
+**Contexto.** El componente meteorológico del índice se normaliza a **percentiles
+sobre la serie histórica local** de cada municipio (docs/04 §1). Si se calibra la
+distribución con una fuente (reanálisis Open-Meteo) y se evalúa la operación con
+otra (observación AEMET + IDW), sus sesgos sistemáticos distintos corren los
+percentiles: un municipio de montaña con +1,5 °C sistemático puntuaría alto de
+forma **permanente**, con números plausibles y nada que falle. El backtest de la
+Fase 4 quedaría calibrado sobre una distribución que no es la de producción.
+
+**Decisión.** **Una sola fuente para todo: Open-Meteo, modelo ERA5-Seamless**
+(temperatura y HR de ERA5-Land ~11 km, viento y precipitación de ERA5 ~25 km).
+Alimenta tanto el backfill histórico (1940→) como la operación diaria. AEMET
+**deja de ser entrada** y pasa a **contraste externo** en la validación (Fase 4),
+junto a PREVIFOC (docs/02 §7, docs/09).
+
+**Motivo.** (1) Es la única opción que elimina de raíz el desajuste
+calibración↔evaluación, en vez de parchearlo con una corrección de sesgo por
+municipio que además puede no ser estacionaria. (2) ERA5 es un reanálisis
+**homogéneo**, justo lo que necesita una climatología de percentiles estable. (3)
+Historia profunda para el backtest de 20 años. (4) Como contraste **independiente**
+—distinta física y observación real—, AEMET vale más que como entrada sesgada.
+ERA5-Land solo NO sirve: no trae viento a 10 m (verificado en la API).
+
+**Consecuencia.** El archivo ERA5 tiene **~5 días de latencia** (no hay reanálisis
+de "hoy"; la API de previsión de Open-Meteo usa modelos NWP distintos, así que
+mezclarla reabriría el problema). El índice operativo va, por tanto, **~5 días
+atrasado**: el job diario calcula el último día disponible y lo **etiqueta con su
+fecha**. Es aceptable y honesto porque GUAITA **no es un sistema de emergencia**
+(amenaza T7); para eso está el 112 / PREVIFOC. Limitación de resolución: el viento
+queda a ~25 km (ERA5-Land no lo downscalea); la temperatura, donde más pesa el
+desnivel de 1.800 m, sí baja a ~11 km, y la corrección altitudinal (docs/04) actúa
+sobre ella. Mediodía fijado en 12:00 UTC (criterio EFFIS, docs/04).
+
 ## Módulos del backend
 
 | Módulo | Responsabilidad | Depende de |
