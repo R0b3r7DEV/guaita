@@ -69,9 +69,7 @@ class MunicipioTilesControllerTest {
 
     JtsMvt mvt =
         MvtReader.loadMvt(
-            new ByteArrayInputStream(bytes),
-            new GeometryFactory(),
-            new TagKeyValueMapConverter());
+            new ByteArrayInputStream(bytes), new GeometryFactory(), new TagKeyValueMapConverter());
     JtsLayer capa = mvt.getLayer("municipios");
     assertNotNull(capa, "el tile no trae la capa 'municipios'");
 

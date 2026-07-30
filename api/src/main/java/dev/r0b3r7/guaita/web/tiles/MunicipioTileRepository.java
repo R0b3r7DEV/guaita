@@ -55,7 +55,6 @@ class MunicipioTileRepository {
   byte[] municipiosTile(TileMath.Bbox b) {
     jdbc.execute("set local statement_timeout = " + STATEMENT_TIMEOUT_MS);
     double tol = (b.maxX() - b.minX()) / EXTENT; // una celda MVT, en metros de 3857
-    return jdbc.queryForObject(
-        SQL, byte[].class, b.minX(), b.minY(), b.maxX(), b.maxY(), tol);
+    return jdbc.queryForObject(SQL, byte[].class, b.minX(), b.minY(), b.maxX(), b.maxY(), tol);
   }
 }
