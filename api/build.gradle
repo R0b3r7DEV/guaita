@@ -52,4 +52,10 @@ spotless {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	testLogging {
+		events 'failed'
+		exceptionFormat = 'full'   // imprime el mensaje de aserción en el log de CI, no solo la línea
+		showCauses = true
+		showStackTraces = true
+	}
 }
