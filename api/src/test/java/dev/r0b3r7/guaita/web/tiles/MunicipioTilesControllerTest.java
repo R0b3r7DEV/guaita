@@ -69,9 +69,14 @@ class MunicipioTilesControllerTest {
             .getResponse()
             .getContentAsByteArray();
 
+    // ST_AsMVT emite tiles con winding de la spec 2.1: hay que decodificar con el clasificador de
+    // anillos V2.1, no el V1 (que dejaría los polígonos vacíos y la capa sin geometrías).
     JtsMvt mvt =
         MvtReader.loadMvt(
-            new ByteArrayInputStream(bytes), new GeometryFactory(), new TagKeyValueMapConverter());
+            new ByteArrayInputStream(bytes),
+            new GeometryFactory(),
+            new TagKeyValueMapConverter(),
+            MvtReader.RING_CLASSIFIER_V2_1);
     JtsLayer capa = mvt.getLayer("municipios");
     assertNotNull(capa, "el tile no trae la capa 'municipios'");
 
