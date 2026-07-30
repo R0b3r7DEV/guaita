@@ -84,6 +84,24 @@ jobs:
         run: |
           set -o pipefail
           curl -fsS http://localhost:8080/actuator/health | tee /dev/stderr | grep -q '"status":"UP"'
+      - name: Endpoint MVT sirve una tesela (200 + Content-Type)
+        run: |
+          set -euo pipefail
+          set -a; . ./.env; set +a
+          # El seed no corre en smoke: se siembra la huella mínima de Castelló para que la tesela
+          # traiga geometría (sin datos, el endpoint devuelve 204). z8/127/96 contiene el término.
+          docker compose exec -T db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -c \
+            "insert into municipio (ine_code, nombre, comarca, geom, superficie_ha, poblacion)
+             select '12040','Castelló de la Plana','La Plana Alta', g, st_area(g)/10000.0, 1
+             from (select st_multi(st_buffer(
+               st_transform(st_setsrid(st_makepoint(-0.0376,39.9864),4326),25830),2000)) g) t
+             on conflict (ine_code) do nothing;"
+          code=$(curl -s -D /tmp/mvt.h -o /tmp/mvt.bin -w '%{http_code}' \
+            http://localhost:8080/api/v1/tiles/municipios/8/127/96.mvt)
+          echo "HTTP $code"; cat /tmp/mvt.h
+          test "$code" = "200"
+          grep -qi '^content-type: *application/vnd.mapbox-vector-tile' /tmp/mvt.h
+          test -s /tmp/mvt.bin
       - name: make down
         if: always()
         run: make down

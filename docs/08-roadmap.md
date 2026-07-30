@@ -27,21 +27,33 @@ lo reejecuta.
 
 ---
 
-## Fase 1 · Geodatos base (semanas 2–3)
+## Fase 1 · Geodatos base (semanas 2–3) — ✅ COMPLETADA
 
-- [ ] `etl/` con GDAL en contenedor.
-- [ ] Carga de límites municipales del CNIG → tabla `municipio` (135 registros).
-- [ ] Carga de la capa forestal PATFOR → `terreno_forestal`, con `ST_Subdivide`.
-- [ ] MDT → `gdaldem slope` → estadísticos zonales → `topografia_municipio`.
-- [ ] Endpoint `/tiles/municipios/{z}/{x}/{y}.mvt` con `ST_AsMVT`.
-- [ ] Visor MapLibre pintando la provincia. Sin datos aún, solo geometría.
+- [x] `etl/` con GDAL en contenedor (perfil `etl`, `make seed`).
+- [x] Carga de límites municipales del CNIG → tabla `municipio` (135 registros).
+- [x] Carga de la capa forestal PATFOR → `terreno_forestal`, con `ST_Subdivide`.
+- [x] MDT → `gdaldem slope` → estadísticos zonales → `topografia_municipio`.
+      (MDT25 servido como Release, consumo offline con SHA256; ver `etl/`.)
+- [x] Endpoint `/tiles/municipios/{z}/{x}/{y}.mvt` con `ST_AsMVT` (ADR-04).
+- [x] Visor MapLibre pintando la provincia (los 135 términos, solo geometría).
 
 **Criterio:** se ve el mapa de Castellón con los 135 términos y se puede hacer
-clic en uno.
+clic en uno. **Cumplido.**
 
-**Riesgo:** aquí es donde se pierde tiempo. Los shapefiles siempre traen alguna
-sorpresa de proyección o de codificación de caracteres (ñ, ç, apóstrofes
-valencianos). Presupuestar un día entero solo para eso.
+**Decisión de arquitectura tomada aquí (ADR-06):** las teselas llevan solo
+geometría e identidad y son inmutables; el índice de peligro (Fase 3) viajará por
+JSON aparte y se unirá en cliente por `ine_code`. Así la caché nunca servirá el
+peligro de ayer.
+
+**Validado en CI:** el job `backend` corre el test de integración que decodifica
+el MVT (la feature de Castelló viaja con sus atributos), y el job `smoke` pide
+una tesela al stack levantado y comprueba `200` + `Content-Type`
+`application/vnd.mapbox-vector-tile`.
+
+**Riesgo (materializado y resuelto):** los shapefiles trajeron las sorpresas
+previstas —proyección (teselas UTM que no cubrían el borde este de Moncofa),
+codificación (ç, apóstrofes valencianos)— y se cerraron con aserciones que fallan
+ruidosamente en el seed.
 
 ---
 

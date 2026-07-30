@@ -24,6 +24,20 @@ ha), Les Useres (2022), Villanueva de Viver (2023, 4.700 ha) y la Serra d'Espad�
 (2026)— mientras los planes de prevención de demarcación sobre los que se
 planifica fueron redactados entre 2007 y 2013 y actualizados en 2013–2014.
 
+## Visor
+
+Los 135 términos de la provincia en un visor MapLibre servido por teselas
+vectoriales propias (`ST_AsMVT` desde PostGIS, sin `pg_tileserv` ni token de
+Mapbox). Clic en un término muestra su nombre y comarca; el coropleto por nivel de
+peligro llega en la Fase 3 sin rehacer la capa (las teselas ya declaran
+`promoteId: 'ine_code'`, ADR-06).
+
+<!-- Captura pendiente: docs/img/visor.png. Se genera levantando el stack con datos
+     (make up && make seed) y fotografiando http://localhost:5173. No se incluye una
+     imagen fabricada. -->
+> _Captura del visor: pendiente de `docs/img/visor.png` — se obtiene con el stack
+> levantado y sembrado (`make up && make seed`), sobre `http://localhost:5173`._
+
 ## Stack
 
 Java 21 · Spring Boot 4.1 · PostgreSQL 16 + PostGIS 3.4 · React 19 + Vite ·
