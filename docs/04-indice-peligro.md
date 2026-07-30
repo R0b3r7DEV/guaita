@@ -73,10 +73,18 @@ Puntos que hay que respetar sí o sí:
   Aplicar tras un periodo de lluvias. Para el histórico, arrancar el 1 de marzo
   de cada año y **descartar los primeros 30 días** como calentamiento del modelo.
   Si el backtest incluye esos días, los resultados son basura.
-- **Longitud de día.** DMC y DC llevan factores dependientes del mes pensados
-  para latitudes canadienses. Para Castellón (≈40°N) usar los ajustes de latitud
-  documentados en la literatura de adaptación mediterránea. Documentar la
-  elección en el código con un comentario que cite la fuente.
+- **Longitud de día.** DMC y DC llevan factores dependientes del mes (Tablas 1 y
+  2 de Van Wagner & Pickett 1985) tabulados para latitudes canadienses. Para
+  Castellón (≈40°N) la literatura de adaptación aplica el ajuste de latitud de
+  **Lawson & Armitage (2008)** —el que usan `cffdrs` y EFFIS—.
+  > **⚠️ RIESGO ABIERTO (Fase 2).** El `FwiCalculator` deja los factores Le/Lf
+  > **configurables**. Por defecto usa los **canadienses estándar** (con eso
+  > reproduce la tabla de ejemplo de la publicación, que es el test de
+  > referencia). El ajuste de latitud de Lawson & Armitage 2008 para ~40°N se
+  > cargará con su fuente cuando entre la meteo real (asignación municipal); hasta
+  > entonces se usan los canadienses, dicho explícitamente en el código, para no
+  > meter constantes sin procedencia. Su efecto es estacional (desplaza el peso de
+  > DMC/DC entre meses), no cambia la estructura del índice.
 - **Unidades.** Viento en km/h, no m/s. Es un error frecuente y silencioso: el
   FWI sale bajo y nadie se da cuenta.
 
