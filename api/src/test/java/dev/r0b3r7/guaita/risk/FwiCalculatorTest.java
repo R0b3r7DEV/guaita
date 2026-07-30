@@ -19,8 +19,13 @@ import org.junit.jupiter.api.Test;
  *   <li>Reproduce la TABLA DE EJEMPLO de la publicación original (Van Wagner &amp; Pickett 1985,
  *       Programa F-32, 49 días). Es la referencia primaria; cffdrs se valida contra esta misma
  *       tabla, así que reproducirla es la comprobación más fuerte posible.
- *   <li>(no incluido) Contraste con cffdrs en R: este entorno no tiene R, así que no se genera
- *       aquí; la tabla de la publicación lo cubre y con más autoridad.
+ *   <li><b>COBERTURA PENDIENTE</b> (test #2, contraste con cffdrs en R): este entorno no tiene R,
+ *       así que no se genera aquí. La tabla de la publicación es la referencia primaria, pero NO
+ *       sustituye a cffdrs: 49 días de una estación no ejercitan los casos límite que aportaría
+ *       —fronteras de mes en Le/Lf (solo se cruza abril→mayo; jun-dic sin probar), DC en sequía
+ *       prolongada (aquí no pasa de ~125), valores extremos—. Además, la reimplementación en Python
+ *       usada para inspeccionar no es validación independiente: mismo lector, mismas ecuaciones (un
+ *       error de lectura se replicaría idéntico). Pendiente, no cubierto.
  *   <li>Propiedad: lluvia sostenida &gt; 30 mm/día hunde el FFMC al mínimo.
  *   <li>Propiedad: calor sostenido sin lluvia hace crecer el DC monótonamente.
  *   <li>Regresión de la recursión: reanudar desde un estado persistido == cálculo continuo.

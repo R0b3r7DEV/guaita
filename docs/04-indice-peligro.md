@@ -33,14 +33,26 @@ memoria ni de un blog. Hay implementaciones de referencia en R (`cffdrs`) y
 Python (`pyfwi`, `NASA-fwi`) que sirven para **generar vectores de test**, no
 para copiar.
 
-### Entradas (diarias, al mediodía solar ≈ 12:00 UTC en península)
+### Entradas (diarias, a las **12:00 UTC** — criterio EFFIS)
 
 | Variable | Unidad | Origen |
 |---|---|---|
-| Temperatura | °C | AEMET obs / Open-Meteo |
+| Temperatura | °C | Open-Meteo / AEMET obs |
 | Humedad relativa | % | ídem |
 | Velocidad de viento | km/h | ídem |
 | Precipitación acumulada 24 h | mm | ídem |
+
+> **Definición de "mediodía" — FIJADA en 12:00 UTC.** El FWI se define sobre
+> observaciones de mediodía. EFFIS, para toda Europa, seleccionó **las 12:00 UTC**
+> como entrada del modelo ("after several tests the 12 UTC model output was
+> considered the most suitable"; *Fire Danger Forecast*, EFFIS/Copernicus). Se
+> adopta ese criterio por **consistencia y comparabilidad externa con EFFIS**, no
+> el mediodía solar local ni las 12:00 de reloj (que serían 11:00 UTC en invierno
+> y 10:00 UTC en verano y desplazarían sistemáticamente temperatura y HR, justo lo
+> que come el FFMC). Para Castellón, cerca del meridiano 0, las 12:00 UTC coinciden
+> además con el mediodía solar. **La conversión horaria vive en UN solo sitio del
+> código.** Ojo con Open-Meteo: su API horaria devuelve UTC por defecto (timezone
+> GMT); se indexa la hora 12 en UTC sin pasar `timezone`.
 
 ### Estructura
 
@@ -74,17 +86,19 @@ Puntos que hay que respetar sí o sí:
   de cada año y **descartar los primeros 30 días** como calentamiento del modelo.
   Si el backtest incluye esos días, los resultados son basura.
 - **Longitud de día.** DMC y DC llevan factores dependientes del mes (Tablas 1 y
-  2 de Van Wagner & Pickett 1985) tabulados para latitudes canadienses. Para
-  Castellón (≈40°N) la literatura de adaptación aplica el ajuste de latitud de
-  **Lawson & Armitage (2008)** —el que usan `cffdrs` y EFFIS—.
-  > **⚠️ RIESGO ABIERTO (Fase 2).** El `FwiCalculator` deja los factores Le/Lf
-  > **configurables**. Por defecto usa los **canadienses estándar** (con eso
-  > reproduce la tabla de ejemplo de la publicación, que es el test de
-  > referencia). El ajuste de latitud de Lawson & Armitage 2008 para ~40°N se
-  > cargará con su fuente cuando entre la meteo real (asignación municipal); hasta
-  > entonces se usan los canadienses, dicho explícitamente en el código, para no
-  > meter constantes sin procedencia. Su efecto es estacional (desplaza el peso de
-  > DMC/DC entre meses), no cambia la estructura del índice.
+  2 de Van Wagner & Pickett 1985) tabulados para latitudes canadienses (≈46°N).
+  Para otras latitudes, Lawson & Armitage (2008) proponen factores ajustados por
+  bandas.
+  > **✅ RESUELTO (verificado, no asumido).** El ajuste de Lawson & Armitage 2008
+  > tal como lo implementa `cffdrs` usa **exactamente los valores canadienses
+  > estándar por encima de 30°N (DMC) y de 20°N (DC)**; solo cambia en bandas
+  > tropicales/australes. Castellón (~40°N) cae de lleno en la banda estándar,
+  > así que los factores por defecto del `FwiCalculator` **ya son los correctos**
+  > para esta latitud. Fuente: `cffdrs` R, `dmcCalc.R` (`ell01`, `lat > 30`) y
+  > `dcCalc.R` (`fl01`, `lat > 20`), que implementan Lawson & Armitage 2008,
+  > "Weather Guide for the Canadian Forest Fire Danger Rating System". Le/Lf
+  > quedan configurables por si el sistema se llevara a otra latitud, pero para
+  > Castellón no hay ajuste pendiente.
 - **Unidades.** Viento en km/h, no m/s. Es un error frecuente y silencioso: el
   FWI sale bajo y nadie se da cuenta.
 
@@ -96,6 +110,19 @@ Puntos que hay que respetar sí o sí:
 3. Test de propiedad: con lluvia > 30 mm/día sostenida, FFMC converge al mínimo.
 4. Test de regresión de la recursión: recalcular un rango debe dar lo mismo que
    calcularlo día a día.
+
+> **Estado (Fase 2).** Hechos: (1) reproduce la tabla de ejemplo de Van Wagner &
+> Pickett 1985 —49 días, Programa F-32— con `max|diff| < 0,1` en los seis códigos;
+> (3) lluvia sostenida hunde el FFMC; (4) reanudar desde estado persistido ==
+> continuo; más el rechazo de entradas imposibles.
+> **COBERTURA PENDIENTE:** el test (2), contraste contra `cffdrs` en R, **no está
+> hecho** (el entorno de desarrollo no tiene R). La tabla de la publicación es la
+> referencia primaria, pero NO sustituye a `cffdrs`: 49 días de una estación no
+> ejercitan las **fronteras de mes en Le/Lf** (solo se cruza abril→mayo; jun-dic
+> sin probar), el **DC en sequía prolongada** (aquí no pasa de ~125) ni los
+> **valores extremos**. Se marca como pendiente, no como cubierto. (La
+> reimplementación en Python usada para inspeccionar no es validación
+> independiente: mismo lector, mismas ecuaciones.)
 
 ### Asignación meteorológica a municipios
 

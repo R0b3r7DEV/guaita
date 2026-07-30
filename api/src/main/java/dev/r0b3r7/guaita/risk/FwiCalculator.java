@@ -14,9 +14,9 @@ package dev.r0b3r7.guaita.risk;
  * <p><b>Longitud de día y latitud (doc 04 §1).</b> Los factores Le (DMC) y Lf (DC) del informe
  * están tabulados para latitudes canadienses. Se dejan CONFIGURABLES en el constructor. {@link
  * #canada()} usa los canadienses estándar, que reproducen la tabla de ejemplo de la publicación (el
- * test de referencia). Para Castellón (~40°N) la adaptación aplica el ajuste de Lawson &amp;
- * Armitage (2008) —el de cffdrs/EFFIS—; queda como RIESGO ABIERTO en docs/04. Por defecto, los
- * canadienses, dicho explícitamente, para no meter constantes sin procedencia.
+ * test de referencia). VERIFICADO (docs/04 §1): el ajuste de latitud de Lawson &amp; Armitage 2008,
+ * como lo implementa cffdrs, usa esos mismos valores canadienses por encima de 30°N (DMC) y 20°N
+ * (DC); Castellón (~40°N) cae en la banda estándar, así que los canadienses ya son los correctos.
  */
 public final class FwiCalculator {
 
