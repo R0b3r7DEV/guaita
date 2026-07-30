@@ -70,9 +70,30 @@ Respuesta con aviso obligatorio en `meta`:
 Eventos conocidos con perímetro, para la capa de contexto y el backtest.
 
 ### `GET /tiles/{layer}/{z}/{x}/{y}.mvt`
-Tiles vectoriales. `layer` ∈ `municipios` | `forestal` | `iuf` | `focos`.
-`iuf` devuelve solo agregado por municipio en z < 12; detalle por edificación
-únicamente en z >= 14 **y con JWT válido**.
+Tiles vectoriales (`Content-Type: application/vnd.mapbox-vector-tile`). `layer` ∈
+`municipios` | `forestal` | `iuf` | `focos`. `iuf` devuelve solo agregado por
+municipio en z < 12; detalle por edificación únicamente en z >= 14 **y con JWT
+válido**. `z` máximo 16 (T4, docs/07); por encima, 400. Una tesela sin geometría
+devuelve **204**, nunca 404 ni un MVT vacío con pinta de error.
+
+**Política de caché (ADR-06).** Las teselas llevan **solo geometría e identidad**
+(`ine_code`, `nombre`, `comarca`) y son inmutables: `Cache-Control: public,
+max-age=31536000, immutable`, con `ETag` de contenido para revalidar tras un
+re-seed. El estado dinámico (índice, nivel, banderas) **no viaja en la tesela**:
+se pide a `/municipios` (JSON, `max-age` corto) y se une en cliente por
+`ine_code`. Así actualizar el índice no invalida ninguna tesela.
+
+### `GET /mapa/extent`
+Envolvente **continental** de la provincia en EPSG:4326 (desde
+`mv_provincia_continental`, no la administrativa: esta incluye las Columbretes y
+encuadraría el visor sobre mar abierto). Para el `fitBounds` inicial del visor.
+
+```json
+{ "bbox": [-0.77, 39.71, 0.30, 40.79] }
+```
+
+`Cache-Control: public, max-age=86400` (el encuadre solo cambia tras un re-seed
+de límites municipales).
 
 ### `GET /metodologia`
 Devuelve la versión del modelo, los pesos vigentes y el enlace a la

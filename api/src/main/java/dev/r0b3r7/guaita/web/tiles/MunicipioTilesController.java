@@ -44,10 +44,12 @@ class MunicipioTilesController {
       return ResponseEntity.noContent().build();
     }
 
-    // ETag fuerte por contenido: cambia si cambia el tile (p. ej. tras re-seed). El geodato es
-    // estático entre cargas, así que se cachea un día; ETag + If-None-Match permiten el 304.
+    // ADR-06: las teselas llevan SOLO geometría e identidad (ine_code/nombre/comarca), que son
+    // inmutables entre seeds; los datos dinámicos (índice, nivel) viajan por JSON aparte y se unen
+    // en cliente por ine_code. Así se cachean un año y actualizar el índice no invalida teselas.
+    // ETag fuerte por contenido (cambia tras un re-seed) para revalidar si el cliente lo pide.
     String etag = "\"" + Long.toHexString(crc32(tile)) + "\"";
-    CacheControl cache = CacheControl.maxAge(Duration.ofDays(1)).cachePublic();
+    CacheControl cache = CacheControl.maxAge(Duration.ofDays(365)).cachePublic().immutable();
     if (etag.equals(ifNoneMatch)) {
       return ResponseEntity.status(HttpStatus.NOT_MODIFIED).eTag(etag).cacheControl(cache).build();
     }

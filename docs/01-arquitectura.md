@@ -129,6 +129,32 @@ procesos separados.
 **Consecuencia.** Si algún día hace falta escalar la ingesta, el módulo `ingest`
 está aislado y se puede extraer. No antes.
 
+---
+
+### ADR-06 — Teselas inmutables, datos dinámicos aparte
+
+**Contexto.** El visor pinta 135 municipios y, desde la Fase 3, un coropleto por
+nivel de peligro que cambia a diario. La tentación será meter el índice como
+atributo del propio MVT para pintar el coropleto de una sola petición.
+
+**Decisión.** Las teselas MVT llevan **solo geometría e identidad** (`ine_code`,
+`nombre`, `comarca`). Son inmutables: `Cache-Control: public, max-age=31536000,
+immutable`. Los datos dinámicos (índice, nivel, banderas) viajan por el endpoint
+JSON `/municipios` (docs/06) y se unen **en cliente** por `ine_code` con
+`setFeatureState` de MapLibre (la source se declara con `promoteId: 'ine_code'`).
+
+**Motivo.** Si el índice viajara en la tesela, la caché —de un día o de un año—
+serviría el peligro de AYER. En esta aplicación concreta ese es exactamente el
+fallo que no podemos permitirnos (amenaza T7). Separar geometría de estado deja
+la geometría cacheable para siempre y el estado —un JSON de 135 filas— trivial
+de refrescar con `max-age` corto. Actualizar el índice no invalida ni regenera
+ninguna tesela.
+
+**Consecuencia.** El cliente hace dos peticiones (teselas + JSON) y las une por
+`ine_code`. Es el patrón estándar de mapas temáticos y MapLibre lo soporta de
+fábrica con `feature-state`. El encuadre inicial del visor se pide a
+`/mapa/extent` (envolvente continental, no la administrativa: docs/06).
+
 ## Módulos del backend
 
 | Módulo | Responsabilidad | Depende de |
