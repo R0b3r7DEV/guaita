@@ -37,9 +37,9 @@ public final class TileMath {
   }
 
   /**
-   * Envolvente 3857 de la tesela {@code (z,x,y)}. Valida rangos: {@code z∈[0,MAX_ZOOM]},
-   * {@code x,y∈[0,2^z)}. El eje Y se invierte aquí: {@code y=0} produce el borde superior en
-   * {@code +ORIGIN_SHIFT} (hemisferio norte).
+   * Envolvente 3857 de la tesela {@code (z,x,y)}. Valida rangos: {@code z∈[0,MAX_ZOOM]}, {@code
+   * x,y∈[0,2^z)}. El eje Y se invierte aquí: {@code y=0} produce el borde superior en {@code
+   * +ORIGIN_SHIFT} (hemisferio norte).
    */
   public static Bbox tileBounds(int z, int x, int y) {
     validate(z, x, y);
@@ -55,8 +55,8 @@ public final class TileMath {
 
   /**
    * Tesela {@code (x,y)} que contiene un punto lon/lat (grados WGS84) a un zoom dado. Fórmula
-   * slippy-map estándar; el suelo (floor) asigna el punto a su tesela. Clampa a {@code [0,2^z)}
-   * en los bordes (polos/antimeridiano).
+   * slippy-map estándar; el suelo (floor) asigna el punto a su tesela. Clampa a {@code [0,2^z)} en
+   * los bordes (polos/antimeridiano).
    */
   public static int[] tileForLonLat(int z, double lon, double lat) {
     int n = tilesPerAxis(z);

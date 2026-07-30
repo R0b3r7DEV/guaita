@@ -11,8 +11,8 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests de {@link TileMath}. No prueban valores escritos a mano (una envolvente hard-coded solo
  * comprueba que la aritmética no cambió, no que sea correcta): prueban <b>invariantes</b>
- * geométricas —el mundo en z=0, la orientación del eje Y, la estabilidad ida y vuelta, y el
- * rechazo de rangos imposibles— más un ancla en un lugar real (Castelló de la Plana).
+ * geométricas —el mundo en z=0, la orientación del eje Y, la estabilidad ida y vuelta, y el rechazo
+ * de rangos imposibles— más un ancla en un lugar real (Castelló de la Plana).
  */
 class TileMathTest {
 

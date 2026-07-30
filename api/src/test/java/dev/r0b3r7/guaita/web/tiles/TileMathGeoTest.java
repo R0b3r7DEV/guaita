@@ -41,7 +41,8 @@ class TileMathGeoTest {
             + " st_area(g) / 10000.0, 1 from ("
             + "  select st_multi(st_buffer("
             + "    st_transform(st_setsrid(st_makepoint(?, ?), 4326), 25830), 2000)) g) t",
-        LON, LAT);
+        LON,
+        LAT);
   }
 
   @Test
