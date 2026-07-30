@@ -13,8 +13,8 @@ import java.util.List;
  *       UTC); la conversión horaria vive aquí, en un solo sitio.
  *   <li><b>Ventana de lluvia</b>: {@code precip_24h} es la acumulación de las 24 h que TERMINAN a
  *       las 12:00 UTC (de ayer 12 UTC a hoy 12 UTC), NO el día natural. Open-Meteo da la
- *       precipitación de la hora anterior en cada índice, así que se suman las 24 horas
- *       {@code (idx-23 .. idx)} que acaban en el mediodía.
+ *       precipitación de la hora anterior en cada índice, así que se suman las 24 horas {@code
+ *       (idx-23 .. idx)} que acaban en el mediodía.
  *   <li><b>Validación</b>: rangos plausibles (T -20..50, HR 0..100, viento&gt;=0, lluvia&gt;=0). Si
  *       UNA fila no valida se rechaza el LOTE ENTERO (T6, docs/07): no se guardan filas parciales.
  * </ul>
@@ -54,8 +54,7 @@ public final class OpenMeteoMapper {
       }
       validar(fecha, temp, hr, viento, precip);
       out.add(
-          new MeteoMunicipio(
-              ineCode, fecha, temp, hr, viento, precip, true, 1, SOURCE, sourceUrl));
+          new MeteoMunicipio(ineCode, fecha, temp, hr, viento, precip, true, 1, SOURCE, sourceUrl));
     }
     return out;
   }
