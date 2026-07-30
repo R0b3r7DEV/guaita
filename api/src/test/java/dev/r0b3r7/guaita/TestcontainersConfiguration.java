@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
-// public: la importan tests de otros paquetes (p. ej. web.tiles) para compartir el mismo contenedor.
+// public: la importan tests de otros paquetes (web.tiles) para compartir el contenedor.
 @TestConfiguration(proxyBeanMethods = false)
 public class TestcontainersConfiguration {
 
