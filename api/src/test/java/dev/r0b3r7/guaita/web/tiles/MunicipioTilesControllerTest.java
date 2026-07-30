@@ -6,19 +6,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.wdtinc.mapbox_vector_tile.adapt.jts.MvtReader;
-import com.wdtinc.mapbox_vector_tile.adapt.jts.TagKeyValueMapConverter;
-import com.wdtinc.mapbox_vector_tile.adapt.jts.model.JtsLayer;
-import com.wdtinc.mapbox_vector_tile.adapt.jts.model.JtsMvt;
+import com.wdtinc.mapbox_vector_tile.VectorTile;
 import dev.r0b3r7.guaita.TestcontainersConfiguration;
-import java.io.ByteArrayInputStream;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -27,9 +19,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
- * Test de integración del endpoint MVT. Decodifica el tile que sale por HTTP y comprueba que la
- * feature de Castelló (INE 12040) viaja con sus atributos —probar solo el status 200 no probaría
- * nada—. También el 204 (tesela sin geometría) y el 400 (zoom fuera de rango).
+ * Test de integración del endpoint MVT. Decodifica el tile que sale por HTTP a nivel del protobuf
+ * (capa, claves/valores y tags de cada feature) y comprueba que la feature de Castelló (INE 12040)
+ * viaja con sus atributos —probar solo el status 200 no probaría nada—. También el 204 (tesela sin
+ * geometría) y el 400 (zoom fuera de rango).
  *
  * <p>El contenedor no ejecuta el seed; se inserta la huella real aproximada de Castelló.
  */
@@ -69,29 +62,39 @@ class MunicipioTilesControllerTest {
             .getResponse()
             .getContentAsByteArray();
 
-    // ST_AsMVT emite tiles con winding de la spec 2.1: hay que decodificar con el clasificador de
-    // anillos V2.1, no el V1 (que dejaría los polígonos vacíos y la capa sin geometrías).
-    JtsMvt mvt =
-        MvtReader.loadMvt(
-            new ByteArrayInputStream(bytes),
-            new GeometryFactory(),
-            new TagKeyValueMapConverter(),
-            MvtReader.RING_CLASSIFIER_V2_1);
-    JtsLayer capa = mvt.getLayer("municipios");
-    assertNotNull(capa, "el tile no trae la capa 'municipios'");
-
-    List<String> diag = new ArrayList<>();
-    boolean encontrado = false;
-    for (Geometry g : capa.getGeometries()) {
-      Object ud = g.getUserData();
-      diag.add(g.getGeometryType() + " ud=" + ud);
-      // Los valores de atributo MVT no siempre decodifican a String: se compara la forma textual.
-      if (ud instanceof Map<?, ?> attrs && "12040".equals(String.valueOf(attrs.get("ine_code")))) {
-        encontrado = true;
-        assertNotNull(attrs.get("nombre"), "la feature de Castelló no trae 'nombre'");
+    // Se decodifica el protobuf MVT directamente (nivel wire): la capa, sus pools de claves/valores
+    // y las tags de cada feature (índices [clave,valor] alternados hacia esos pools).
+    VectorTile.Tile tile = VectorTile.Tile.parseFrom(bytes);
+    VectorTile.Tile.Layer capa = null;
+    for (VectorTile.Tile.Layer l : tile.getLayersList()) {
+      if ("municipios".equals(l.getName())) {
+        capa = l;
       }
     }
-    assertTrue(encontrado, "sin feature 12040. n=" + capa.getGeometries().size() + " " + diag);
+    assertNotNull(capa, "el tile no trae la capa 'municipios'");
+
+    List<String> claves = capa.getKeysList();
+    List<VectorTile.Tile.Value> valores = capa.getValuesList();
+    boolean encontrado = false;
+    for (VectorTile.Tile.Feature f : capa.getFeaturesList()) {
+      String ineCode = null;
+      boolean tieneNombre = false;
+      List<Integer> tags = f.getTagsList();
+      for (int i = 0; i + 1 < tags.size(); i += 2) {
+        String clave = claves.get(tags.get(i));
+        String valor = valores.get(tags.get(i + 1)).getStringValue();
+        if ("ine_code".equals(clave)) {
+          ineCode = valor;
+        } else if ("nombre".equals(clave)) {
+          tieneNombre = !valor.isEmpty();
+        }
+      }
+      if ("12040".equals(ineCode)) {
+        encontrado = true;
+        assertTrue(tieneNombre, "la feature de Castelló no trae 'nombre'");
+      }
+    }
+    assertTrue(encontrado, "sin feature 12040. features=" + capa.getFeaturesList().size());
   }
 
   @Test
