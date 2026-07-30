@@ -6,8 +6,9 @@ import org.springframework.context.annotation.Bean;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
+// public: la importan tests de otros paquetes (p. ej. web.tiles) para compartir el mismo contenedor.
 @TestConfiguration(proxyBeanMethods = false)
-class TestcontainersConfiguration {
+public class TestcontainersConfiguration {
 
   // PostGIS, no postgres pelado: V1__extensions.sql hace `create extension postgis`.
   // La imagen postgis es compatible con el driver postgres (asCompatibleSubstituteFor).
