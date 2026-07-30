@@ -1,11 +1,11 @@
 package dev.r0b3r7.guaita.web;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.lessThan;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.r0b3r7.guaita.TestcontainersConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,12 +48,22 @@ class MapaControllerTest {
 
   @Test
   void elExtentContinentalCaeSobreCastellon() throws Exception {
+    String body =
+        mvc.perform(get("/api/v1/mapa/extent"))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+
     // Huella de ~2 km alrededor de Castelló: bbox aprox. lon[-0,06..-0,01], lat[39,97..40,00].
-    mvc.perform(get("/api/v1/mapa/extent"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.bbox[0]").value(greaterThan(-1.0))) // minLon
-        .andExpect(jsonPath("$.bbox[1]").value(greaterThan(38.0))) // minLat
-        .andExpect(jsonPath("$.bbox[2]").value(lessThan(1.0))) // maxLon
-        .andExpect(jsonPath("$.bbox[3]").value(lessThan(42.0))); // maxLat
+    JsonNode bbox = new ObjectMapper().readTree(body).get("bbox");
+    double minLon = bbox.get(0).asDouble();
+    double minLat = bbox.get(1).asDouble();
+    double maxLon = bbox.get(2).asDouble();
+    double maxLat = bbox.get(3).asDouble();
+    assertTrue(minLon > -1.0 && minLon < 1.0, "minLon fuera de la provincia: " + minLon);
+    assertTrue(maxLon > -1.0 && maxLon < 1.0, "maxLon fuera de la provincia: " + maxLon);
+    assertTrue(minLat > 38.0 && minLat < 42.0, "minLat fuera de la provincia: " + minLat);
+    assertTrue(maxLat > 38.0 && maxLat < 42.0, "maxLat fuera de la provincia: " + maxLat);
   }
 }
