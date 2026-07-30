@@ -89,11 +89,16 @@ public final class OpenMeteoClient {
       lon.add(fmt(p.lon()));
     }
     return baseUrl
-        + "?latitude=" + lat
-        + "&longitude=" + lon
-        + "&start_date=" + start
-        + "&end_date=" + end
-        + "&hourly=" + HOURLY
+        + "?latitude="
+        + lat
+        + "&longitude="
+        + lon
+        + "&start_date="
+        + start
+        + "&end_date="
+        + end
+        + "&hourly="
+        + HOURLY
         + "&models=era5_seamless"
         + "&wind_speed_unit=kmh"
         + "&timezone=GMT";
