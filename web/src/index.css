@@ -5,7 +5,7 @@
   --accent: #d97706; /* ámbar de aviso */
   --disclaimer-bg: #3a1d1d;
   --disclaimer-fg: #ffd9d0;
-  color-scheme: dark light;
+  color-scheme: dark;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
@@ -13,15 +13,21 @@
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  height: 100%;
+}
+
 body {
   margin: 0;
   background: var(--bg);
   color: var(--fg);
-  min-height: 100vh;
 }
 
+/* Columna: el aviso arriba (siempre visible, sin scroll) y el mapa ocupa el resto. */
 .app {
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
 }
@@ -29,37 +35,71 @@ body {
 .disclaimer {
   background: var(--disclaimer-bg);
   color: var(--disclaimer-fg);
-  padding: 0.75rem 1.25rem;
+  padding: 0.7rem 1.25rem;
   font-size: 0.95rem;
   line-height: 1.5;
   border-bottom: 2px solid var(--accent);
 }
 
-.hero {
+.map-wrap {
+  position: relative;
   flex: 1;
+  min-height: 0; /* imprescindible: sin esto el mapa no encoge dentro del flex */
+}
+
+.map {
+  position: absolute;
+  inset: 0;
+}
+
+/* Identidad discreta sobre el mapa, sin robarle espacio. */
+.brand {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 2rem;
+  gap: 0.1rem;
+  padding: 0.45rem 0.75rem;
+  background: rgba(15, 18, 17, 0.82);
+  border: 1px solid rgba(154, 168, 161, 0.25);
+  border-radius: 8px;
+  pointer-events: none;
 }
 
-.hero h1 {
-  font-size: clamp(2.5rem, 8vw, 5rem);
-  letter-spacing: 0.15em;
-  margin: 0;
+.brand strong {
+  font-size: 1.1rem;
+  letter-spacing: 0.14em;
 }
 
-.tagline {
+.brand span {
+  font-size: 0.72rem;
   color: var(--muted);
-  max-width: 40ch;
-  margin: 0.5rem 0 0;
 }
 
-.phase {
+/* Popup de MapLibre: se le da el tema oscuro del visor. */
+.maplibregl-popup-content {
+  background: #161c19;
+  color: var(--fg);
+  border: 1px solid rgba(154, 168, 161, 0.3);
+  border-radius: 8px;
+  padding: 0.6rem 0.85rem;
+}
+
+.maplibregl-popup-content .pop-comarca {
   color: var(--muted);
   font-size: 0.85rem;
-  margin-top: 2rem;
-  opacity: 0.7;
+}
+
+.maplibregl-popup-close-button {
+  color: var(--muted);
+}
+
+.maplibregl-popup-anchor-top .maplibregl-popup-tip {
+  border-bottom-color: #161c19;
+}
+
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
+  border-top-color: #161c19;
 }

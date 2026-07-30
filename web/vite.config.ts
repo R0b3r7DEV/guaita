@@ -7,5 +7,10 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
+    // En desarrollo, el visor pide /api al mismo origen; se reenvía a la api local.
+    // En producción es Apache/nginx quien hace de reverse proxy (ver web/nginx.conf).
+    proxy: {
+      "/api": "http://localhost:8080",
+    },
   },
 });
