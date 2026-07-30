@@ -1,10 +1,10 @@
 package dev.r0b3r7.guaita.risk;
 
 /**
- * Sistema canadiense Fire Weather Index (FWI). Implementado DESDE LAS ECUACIONES PUBLICADAS en:
- * Van Wagner, C.E. &amp; Pickett, T.L. (1985), «Equations and FORTRAN program for the Canadian
- * Forest Fire Weather Index System», Forestry Technical Report 33. (El informe de estructura de
- * 1987 —Report 35, referencia de doc 04— describe el sistema; las ecuaciones exactas y su tabla de
+ * Sistema canadiense Fire Weather Index (FWI). Implementado DESDE LAS ECUACIONES PUBLICADAS en: Van
+ * Wagner, C.E. &amp; Pickett, T.L. (1985), «Equations and FORTRAN program for the Canadian Forest
+ * Fire Weather Index System», Forestry Technical Report 33. (El informe de estructura de 1987
+ * —Report 35, referencia de doc 04— describe el sistema; las ecuaciones exactas y su tabla de
  * ejemplo están en el 33. Números de ecuación citados abajo.)
  *
  * <p>Función PURA: sin red, sin BD, sin Spring. {@link #step} recibe el estado de ayer
@@ -12,11 +12,11 @@ package dev.r0b3r7.guaita.risk;
  * humedad son RECURSIVOS: no se calcula un día suelto sin la cadena previa (doc 04 §1).
  *
  * <p><b>Longitud de día y latitud (doc 04 §1).</b> Los factores Le (DMC) y Lf (DC) del informe
- * están tabulados para latitudes canadienses. Se dejan CONFIGURABLES en el constructor.
- * {@link #canada()} usa los canadienses estándar, que reproducen la tabla de ejemplo de la
- * publicación (el test de referencia). Para Castellón (~40°N) la adaptación aplica el ajuste de
- * Lawson &amp; Armitage (2008) —el de cffdrs/EFFIS—; queda como RIESGO ABIERTO en docs/04. Por
- * defecto, los canadienses, dicho explícitamente, para no meter constantes sin procedencia.
+ * están tabulados para latitudes canadienses. Se dejan CONFIGURABLES en el constructor. {@link
+ * #canada()} usa los canadienses estándar, que reproducen la tabla de ejemplo de la publicación (el
+ * test de referencia). Para Castellón (~40°N) la adaptación aplica el ajuste de Lawson &amp;
+ * Armitage (2008) —el de cffdrs/EFFIS—; queda como RIESGO ABIERTO en docs/04. Por defecto, los
+ * canadienses, dicho explícitamente, para no meter constantes sin procedencia.
  */
 public final class FwiCalculator {
 
@@ -101,8 +101,7 @@ public final class FwiCalculator {
     if (ro > 0.5) { // la rutina de lluvia se omite en tiempo seco (ro<=0.5)
       double rf = ro - 0.5; // (2)
       double mr =
-          mo
-              + 42.5 * rf * Math.exp(-100.0 / (251.0 - mo)) * (1.0 - Math.exp(-6.93 / rf)); // (3a)
+          mo + 42.5 * rf * Math.exp(-100.0 / (251.0 - mo)) * (1.0 - Math.exp(-6.93 / rf)); // (3a)
       if (mo > 150.0) {
         mr += 0.0015 * (mo - 150.0) * (mo - 150.0) * Math.sqrt(rf); // (3b)
       }
@@ -199,10 +198,8 @@ public final class FwiCalculator {
     if (dmc <= 0.4 * dc) {
       u = 0.8 * dmc * dc / (dmc + 0.4 * dc); // (27a)
     } else {
-      u =
-          dmc
-              - (1.0 - 0.8 * dc / (dmc + 0.4 * dc))
-                  * (0.92 + Math.pow(0.0114 * dmc, 1.7)); // (27b)
+      double frac = 0.8 * dc / (dmc + 0.4 * dc);
+      u = dmc - (1.0 - frac) * (0.92 + Math.pow(0.0114 * dmc, 1.7)); // (27b)
     }
     return Math.max(u, 0.0);
   }
