@@ -12,6 +12,8 @@ import com.wdtinc.mapbox_vector_tile.adapt.jts.model.JtsLayer;
 import com.wdtinc.mapbox_vector_tile.adapt.jts.model.JtsMvt;
 import dev.r0b3r7.guaita.TestcontainersConfiguration;
 import java.io.ByteArrayInputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -73,15 +75,18 @@ class MunicipioTilesControllerTest {
     JtsLayer capa = mvt.getLayer("municipios");
     assertNotNull(capa, "el tile no trae la capa 'municipios'");
 
+    List<String> diag = new ArrayList<>();
     boolean encontrado = false;
     for (Geometry g : capa.getGeometries()) {
-      Map<?, ?> attrs = (Map<?, ?>) g.getUserData();
-      if (attrs != null && "12040".equals(attrs.get("ine_code"))) {
+      Object ud = g.getUserData();
+      diag.add(g.getGeometryType() + " ud=" + ud);
+      // Los valores de atributo MVT no siempre decodifican a String: se compara la forma textual.
+      if (ud instanceof Map<?, ?> attrs && "12040".equals(String.valueOf(attrs.get("ine_code")))) {
         encontrado = true;
         assertNotNull(attrs.get("nombre"), "la feature de Castelló no trae 'nombre'");
       }
     }
-    assertTrue(encontrado, "el tile decodificado no contiene la feature de Castelló (12040)");
+    assertTrue(encontrado, "sin feature 12040. n=" + capa.getGeometries().size() + " " + diag);
   }
 
   @Test
