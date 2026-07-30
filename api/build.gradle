@@ -34,6 +34,10 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-testcontainers'
 	testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
 	testImplementation 'org.testcontainers:testcontainers-postgresql'
+	// Decodifica el MVT que emite el endpoint (bytes -> features JTS con atributos) para probar
+	// que la feature de Castelló viaja de verdad, no solo que el status es 200. En Maven Central
+	// (Apache-2.0); la alternativa no.ecc.vectortile solo está en JitPack (menos auditable).
+	testImplementation 'com.wdtinc:mapbox-vector-tile:3.1.0'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
