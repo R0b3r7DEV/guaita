@@ -1,9 +1,12 @@
 package dev.r0b3r7.guaita.ingest;
 
+import java.sql.Date;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -45,30 +48,54 @@ public class FwiBackfillReport {
     this.jdbc = jdbc;
   }
 
-  /** Comprueba las invariantes del backfill. Lanza con la lista de fallos si alguna falla. */
-  public void asserciones() {
+  /**
+   * Comprueba las invariantes del backfill provincial contra {@code corte} (el último día del
+   * archivo). Lanza con la lista de fallos si alguna falla.
+   */
+  public void asserciones(LocalDate corte) {
     List<String> fallos = new ArrayList<>();
 
-    Integer nulos =
+    // Negativo, NaN o infinito en CUALQUIER código FWI. Ojo: el CHECK fwi_no_neg (>= 0) NO basta,
+    // porque en Postgres NaN >= 0 e Infinity >= 0 son TRUE y colarían. Unpivot con lateral values.
+    Integer malos =
         jdbc.queryForObject(
-            "select count(*) from fwi_municipio where fwi < 0 or 'NaN' = fwi or dc < 0",
+            "select count(*) from fwi_municipio f, lateral (values (f.ffmc),(f.dmc),(f.dc),"
+                + "(f.isi),(f.bui),(f.fwi)) as v(x)"
+                + " where v.x < 0 or v.x = 'NaN' or v.x = 'Infinity' or v.x = '-Infinity'",
             Integer.class);
-    if (nulos != null && nulos > 0) {
-      fallos.add(nulos + " filas con FWI/DC negativo o NaN");
+    if (malos != null && malos > 0) {
+      fallos.add(malos + " valores FWI negativos, NaN o infinitos");
     }
 
-    // Sin huecos: cada municipio debe tener días consecutivos (max-min+1 == count).
-    Integer huecos =
-        jdbc.queryForObject(
-            "select count(*) from (select ine_code, count(*) c,"
-                + " (max(fecha) - min(fecha) + 1) esperado from fwi_municipio group by ine_code) t"
-                + " where c <> esperado",
-            Integer.class);
-    if (huecos != null && huecos > 0) {
-      fallos.add(huecos + " municipios con huecos en la serie");
+    // Completitud: todos los municipios de la provincia con serie FWI.
+    Integer provincia = jdbc.queryForObject("select count(*) from municipio", Integer.class);
+    Integer conSerie =
+        jdbc.queryForObject("select count(distinct ine_code) from fwi_municipio", Integer.class);
+    if (!Objects.equals(provincia, conSerie)) {
+      fallos.add("solo " + conSerie + " de " + provincia + " municipios tienen serie FWI");
     }
 
-    // Calentamiento: exactamente los ~30 primeros días de la serie por municipio.
+    // Cada serie va EXACTAMENTE de SERIE_INICIO a corte sin huecos (fija extremos y nº de días).
+    long dias = ChronoUnit.DAYS.between(BackfillService.SERIE_INICIO, corte) + 1;
+    Integer rangoMal =
+        jdbc.queryForObject(
+            "select count(*) from (select ine_code, min(fecha) mn, max(fecha) mx, count(*) c"
+                + " from fwi_municipio group by ine_code) t where mn <> ? or mx <> ? or c <> ?",
+            Integer.class,
+            Date.valueOf(BackfillService.SERIE_INICIO),
+            Date.valueOf(corte),
+            dias);
+    if (rangoMal != null && rangoMal > 0) {
+      fallos.add(
+          rangoMal
+              + " municipios con rango/huecos (esperado "
+              + BackfillService.SERIE_INICIO
+              + "→"
+              + corte
+              + ")");
+    }
+
+    // Calentamiento: exactamente los 30 primeros días de la serie por municipio...
     Integer calMal =
         jdbc.queryForObject(
             "select count(*) from (select ine_code, count(*) filter (where calentamiento) c"
@@ -76,6 +103,15 @@ public class FwiBackfillReport {
             Integer.class);
     if (calMal != null && calMal > 0) {
       fallos.add(calMal + " municipios sin exactamente 30 días de calentamiento");
+    }
+
+    // ...y SOLO en ene-2005 (serie única desde 2005-01-01: los 30 primeros son 01-01 a 01-30).
+    Integer calFuera =
+        jdbc.queryForObject(
+            "select count(*) from fwi_municipio where calentamiento and fecha > date '2005-01-30'",
+            Integer.class);
+    if (calFuera != null && calFuera > 0) {
+      fallos.add(calFuera + " días de calentamiento fuera de ene-2005");
     }
 
     // Reinicio silencioso del DC: caída brusca (de >50 a <20) SIN lluvia que lo justifique (<5 mm).
@@ -163,7 +199,55 @@ public class FwiBackfillReport {
                   ine);
           md.append("| ").append(nombre).append(" | ").append(medio).append(" |\n");
         });
+
+    gradienteComarca(md);
     return md.toString();
+  }
+
+  /**
+   * Sección d): FWI medio de julio agrupado por comarca (media y rango de las medias municipales),
+   * para ver si el gradiente costa/interior de la muestra de 16 aguanta con la provincia entera.
+   */
+  private void gradienteComarca(StringBuilder md) {
+    md.append("\n## d) Gradiente provincial — FWI medio de julio por comarca\n\n");
+    md.append("| comarca | municipios | FWI medio julio | mín | máx |\n|---|---|---|---|---|\n");
+    List<Map<String, Object>> filas =
+        jdbc.queryForList(
+            "with muni_jul as (select f.ine_code, m.comarca, avg(f.fwi) media"
+                + " from fwi_municipio f join municipio m using (ine_code)"
+                + " where extract(month from f.fecha) = 7 and not f.calentamiento"
+                + " group by f.ine_code, m.comarca)"
+                + " select comarca, count(*) n, round(avg(media),1) med,"
+                + " round(min(media),1) mn, round(max(media),1) mx"
+                + " from muni_jul group by comarca order by med desc");
+    for (Map<String, Object> f : filas) {
+      md.append("| ")
+          .append(f.get("comarca"))
+          .append(" | ")
+          .append(f.get("n"))
+          .append(" | ")
+          .append(f.get("med"))
+          .append(" | ")
+          .append(f.get("mn"))
+          .append(" | ")
+          .append(f.get("mx"))
+          .append(" |\n");
+    }
+    if (filas.size() >= 2) {
+      Map<String, Object> alta = filas.get(0);
+      Map<String, Object> baja = filas.get(filas.size() - 1);
+      md.append("\nLectura: mayor FWI medio de julio en **")
+          .append(alta.get("comarca"))
+          .append("** (")
+          .append(alta.get("med"))
+          .append("); menor en **")
+          .append(baja.get("comarca"))
+          .append("** (")
+          .append(baja.get("med"))
+          .append("). Si la cabeza es litoral (cálido-seco) y la cola de interior de montaña")
+          .append(" (húmedo-fresco), el gradiente costa/interior de la muestra de 16 se")
+          .append(" confirma a escala provincial.\n");
+    }
   }
 
   private Map<String, Object> percentilEvento(Evento e) {

@@ -2,6 +2,12 @@
 # Backfill histórico de meteo (Open-Meteo ERA5-Seamless) y FWI (docs/04, ADR-07).
 # Disparo MANUAL únicamente (workflow_dispatch). NUNCA en push: es caro (baja
 # ~21 años de reanálisis) y toca la BD. Reanudable e idempotente.
+#
+# OBSOLETO para el backfill PROVINCIAL: la BD del runner es efímera entre
+# dispatches (docs/01, "Limitación operativa"), así que no se puede trocear; y
+# la finalización exige los 135 municipios. El backfill completo corre en el
+# VPS contra volumen persistente (README, "Despliegue en VPS"). Se conserva
+# solo para ingestas de meteo puntuales en un run único.
 # ==========================================================================
 name: Backfill FWI (manual)
 
@@ -17,6 +23,9 @@ on:
       ine_codes:
         description: "Subconjunto de municipios (coma-sep). Vacío = los 135. Por defecto: eventos+control."
         default: "12022,12071,12140,12114,12122,12049,12060,12072,12133,12126,12077,12082,12011,12080,12139,12130"
+      finalize:
+        description: "true = calcula FWI+aserciones+informe (exige los 135). Efímero en Actions; el provincial va en el VPS."
+        default: "false"
 
 permissions:
   contents: read
@@ -47,7 +56,7 @@ jobs:
           set -o pipefail
           mkdir -p etl/reports && chmod 777 etl/reports
           docker compose run --rm \
-            -e SPRING_APPLICATION_JSON='{"guaita.backfill.run":true,"guaita.backfill.from":${{ github.event.inputs.from }},"guaita.backfill.to":${{ github.event.inputs.to }},"guaita.backfill.ine-codes":"${{ github.event.inputs.ine_codes }}","guaita.backfill.report-path":"/out/fwi-backfill.md"}' \
+            -e SPRING_APPLICATION_JSON='{"guaita.backfill.run":true,"guaita.backfill.from":${{ github.event.inputs.from }},"guaita.backfill.to":${{ github.event.inputs.to }},"guaita.backfill.ine-codes":"${{ github.event.inputs.ine_codes }}","guaita.backfill.finalize":${{ github.event.inputs.finalize }},"guaita.backfill.report-path":"/out/fwi-backfill.md"}' \
             -v "${{ github.workspace }}/etl/reports:/out" \
             api 2>&1 | tee backfill.log
 

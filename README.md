@@ -85,21 +85,39 @@ contra el volumen persistente, con una **guardia de disco** que aborta limpio
 (BD consistente, reanudable) si el libre baja de `DISK_MIN_FREE_GB` (5 GB por
 defecto), y que se niega a arrancar si el tramo no cabe con margen.
 
+Los **tramos intermedios** solo ingieren meteo (`finalize` ausente); el **tramo
+final** (`"guaita.backfill.finalize":true`) calcula el FWI de los 135 sobre la
+serie completa, verifica que la meteo está completa (aborta diciendo qué falta),
+corre las aserciones de completitud y regenera el informe.
+
 ```bash
-# Lanzar un tramo (ej. 2005-2008) sobreviviendo a la desconexión SSH:
+# Tramo intermedio (ej. 2005-2008), sobreviviendo a la desconexión SSH:
 nohup docker compose -f docker-compose.yml -f docker-compose.vps.yml \
   run --rm --name guaita-backfill \
   -e SPRING_APPLICATION_JSON='{"guaita.backfill.run":true,"guaita.backfill.from":2005,"guaita.backfill.to":2008,"guaita.backfill.report-path":"/out/fwi-backfill.md"}' \
   -v "$(pwd)/etl/reports:/out" \
   api > "etl/reports/backfill-$(date +%Y%m%d-%H%M).log" 2>&1 &
 
-# Progreso en vivo (último año procesado + disco libre):
+# Tramo FINAL (añade "finalize":true): calcula FWI + aserciones + informe.
+#   ...,"guaita.backfill.to":2026,"guaita.backfill.finalize":true,...
+```
+
+Progreso, dos vías:
+
+```bash
+# a) Desde el log (último año procesado + disco libre):
 grep -hE "meteo [0-9]{4} ->|GUARDIA DE DISCO" etl/reports/backfill-*.log | tail -n 3; \
   df -h "${DISK_GUARD_HOST_PATH:-/}" | tail -1
+
+# b) Desde la BD, sin leer el log (municipios cubiertos y rango ingerido):
+docker compose -f docker-compose.yml -f docker-compose.vps.yml exec db \
+  psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
+  "select count(distinct ine_code) municipios, min(fecha), max(fecha), count(*) filas \
+   from meteo_municipio;"
 ```
 
 Reanudar tras un aborto/parada = relanzar el mismo tramo: es idempotente y
-retoma el estado desde la BD.
+retoma el estado desde la BD (que ahora persiste en el volumen del VPS).
 
 ## Documentación
 

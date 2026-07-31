@@ -4,6 +4,8 @@ import dev.r0b3r7.guaita.risk.FwiCalculator;
 import dev.r0b3r7.guaita.risk.FwiCodes;
 import dev.r0b3r7.guaita.risk.FwiWeather;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -118,6 +120,36 @@ public class BackfillService {
       n++;
     }
     return n;
+  }
+
+  /**
+   * Verifica que la meteo está COMPLETA para calcular el FWI de golpe en {@code --finalize}: todos
+   * los municipios presentes, cada uno con serie {@link #SERIE_INICIO}→{@code corte} sin huecos.
+   * Devuelve la lista de problemas (vacía = completa) diciendo EXACTAMENTE qué falta; calcular el
+   * FWI sobre meteo incompleta produce una cadena rota que parece sana, así que esto manda: un tramo
+   * intermedio lanzado con {@code --finalize} por error se para aquí sin tocar nada.
+   */
+  public List<String> verificarMeteoCompleta(LocalDate corte) {
+    long esperado = ChronoUnit.DAYS.between(SERIE_INICIO, corte) + 1;
+    List<String> problemas = new ArrayList<>();
+    for (MeteoMunicipioRepository.CoberturaMeteo c : meteoRepo.cobertura(SERIE_INICIO, corte)) {
+      if (c.filas() == 0) {
+        problemas.add(c.ineCode() + ": sin meteo en el rango");
+      } else if (!SERIE_INICIO.equals(c.primera())) {
+        problemas.add(c.ineCode() + ": empieza en " + c.primera() + ", esperaba " + SERIE_INICIO);
+      } else if (!corte.equals(c.ultima())) {
+        problemas.add(c.ineCode() + ": acaba en " + c.ultima() + ", esperaba " + corte);
+      } else if (c.filas() != esperado) {
+        problemas.add(
+            c.ineCode() + ": " + c.filas() + " filas, esperaba " + esperado + " (hueco interno)");
+      }
+    }
+    return problemas;
+  }
+
+  /** Todos los ine_code de la provincia, para calcular el FWI en {@code --finalize}. */
+  public List<String> municipios() {
+    return jdbc.queryForList("select ine_code from municipio order by ine_code", String.class);
   }
 
   private List<MeteoDia> leerMeteoDesde(String ineCode, LocalDate desde) {

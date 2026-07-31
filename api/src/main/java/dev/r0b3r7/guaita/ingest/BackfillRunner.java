@@ -50,6 +50,13 @@ class BackfillRunner implements ApplicationRunner {
   @Value("${guaita.backfill.ine-codes:}")
   private String ineCodes;
 
+  // Tramo final: calcula el FWI de los 135 sobre la serie completa, corre aserciones y genera el
+  // informe. Los tramos intermedios (false) solo ingieren meteo -> ingesta order-independent y sin
+  // cadenas parciales. Manda la verificación de completitud: un intermedio con finalize=true por
+  // error se para si la meteo no está completa, sin romper nada.
+  @Value("${guaita.backfill.finalize:false}")
+  private boolean finalizar;
+
   BackfillRunner(
       MeteoMunicipioRepository meteoRepo,
       BackfillService backfill,
@@ -100,10 +107,33 @@ class BackfillRunner implements ApplicationRunner {
       int n = backfill.backfillMeteoAño(puntos, año, corte);
       log.info("meteo {} -> {} filas", año, n);
     }
-    for (PuntoMeteo p : puntos) {
-      backfill.computeFwiMunicipio(p.ineCode());
+    if (!finalizar) {
+      log.info(
+          "tramo de meteo {}..{} completado. Sin --finalize: no se calcula FWI ni informe.",
+          desde,
+          hasta);
+      System.exit(0);
+      return;
     }
-    report.asserciones();
+
+    // Finalización: la meteo DEBE estar completa antes de calcular nada. Un FWI sobre meteo con
+    // huecos es una cadena rota que parece sana; la verificación manda.
+    List<String> faltan = backfill.verificarMeteoCompleta(corte);
+    if (!faltan.isEmpty()) {
+      throw new IllegalStateException(
+          "--finalize abortado: la meteo no está completa ("
+              + faltan.size()
+              + " problemas). No se calcula nada.\n  - "
+              + String.join("\n  - ", faltan));
+    }
+    diskGuard.verificarUmbral("cálculo FWI de finalización");
+    int n = 0;
+    for (String ine : backfill.municipios()) {
+      backfill.computeFwiMunicipio(ine);
+      n++;
+    }
+    log.info("FWI calculado/actualizado para {} municipios sobre la serie completa", n);
+    report.asserciones(corte);
     String md = report.informe();
     log.info("=== INFORME fwi-backfill ===\n{}", md); // a stdout también, por si el volumen falla
     Files.writeString(Path.of(reportPath), md);

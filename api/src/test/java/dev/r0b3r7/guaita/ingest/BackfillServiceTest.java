@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import dev.r0b3r7.guaita.TestcontainersConfiguration;
+import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,6 +25,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 class BackfillServiceTest {
 
   @Autowired private BackfillService service;
+  @Autowired private MeteoMunicipioRepository meteoRepo;
   @Autowired private JdbcTemplate jdbc;
 
   @BeforeEach
@@ -74,6 +76,64 @@ class BackfillServiceTest {
             "select count(*) from fwi_municipio where ine_code = '12080' and calentamiento",
             Integer.class);
     assertEquals(30, cal, "deben marcarse exactamente los 30 primeros días");
+  }
+
+  @Test
+  void verificarMeteoCompletaCazaHuecosYFaltantes() {
+    // 12080 tiene meteo 2005-01-01..2005-02-09 completa: no debe aparecer como problema.
+    LocalDate corte = LocalDate.of(2005, 2, 9);
+    List<String> completa = service.verificarMeteoCompleta(corte);
+    assertTrue(
+        completa.stream().noneMatch(s -> s.contains("12080")),
+        "12080 está completo, no debería listarse: " + completa);
+
+    // Un hueco interno debe delatarse con su ine_code.
+    jdbc.update(
+        "delete from meteo_municipio where ine_code = '12080' and fecha = date '2005-01-15'");
+    List<String> conHueco = service.verificarMeteoCompleta(corte);
+    assertTrue(
+        conHueco.stream().anyMatch(s -> s.contains("12080")),
+        "el hueco de 12080 debería delatarse: " + conHueco);
+  }
+
+  @Test
+  void relanzarUnTramoCompletoNoRecalcula() {
+    int primera = service.computeFwiMunicipio("12080");
+    assertEquals(40, primera);
+    Integer antes =
+        jdbc.queryForObject(
+            "select count(*) from fwi_municipio where ine_code = '12080'", Integer.class);
+
+    int segunda = service.computeFwiMunicipio("12080"); // ya está completo hasta el último día
+    Integer despues =
+        jdbc.queryForObject(
+            "select count(*) from fwi_municipio where ine_code = '12080'", Integer.class);
+    assertEquals(0, segunda, "un tramo ya completo no recalcula nada");
+    assertEquals(antes, despues, "ni duplica filas");
+  }
+
+  @Test
+  void upsertMeteoEnDosTramosNoDuplica() {
+    // Ingerir en dos tramos separados == ingerirlo de una vez (upsert idempotente por PK).
+    meteoRepo.upsertAll(List.of(meteo("2010-06-01", 28), meteo("2010-06-02", 29)));
+    meteoRepo.upsertAll(List.of(meteo("2010-06-02", 31), meteo("2010-06-03", 30))); // solapa 06-02
+
+    Integer n =
+        jdbc.queryForObject(
+            "select count(*) from meteo_municipio where ine_code = '12080'"
+                + " and fecha between date '2010-06-01' and date '2010-06-03'",
+            Integer.class);
+    assertEquals(3, n, "tres días distintos, sin duplicar el solapado");
+    Double temp02 =
+        jdbc.queryForObject(
+            "select temp_12utc_c from meteo_municipio where ine_code = '12080'"
+                + " and fecha = date '2010-06-02'",
+            Double.class);
+    assertEquals(31.0, temp02, 1e-9, "el solapado quedó con el último valor (upsert)");
+  }
+
+  private static MeteoMunicipio meteo(String fecha, double temp) {
+    return new MeteoMunicipio("12080", LocalDate.parse(fecha), temp, 30, 12, 0, 800, 0, "T", "u");
   }
 
   private List<double[]> serieFwi() {

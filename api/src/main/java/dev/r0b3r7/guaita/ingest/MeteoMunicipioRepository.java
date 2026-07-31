@@ -1,5 +1,6 @@
 package dev.r0b3r7.guaita.ingest;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -16,6 +17,26 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Repository
 public class MeteoMunicipioRepository {
+
+  /**
+   * Cobertura de meteo de un municipio en un rango: nº de filas y primera/última fecha. Un {@code
+   * LEFT JOIN} desde {@code municipio} deja {@code filas=0} y fechas nulas para los que no tienen
+   * dato, de modo que la verificación de completitud vea también los municipios que FALTAN.
+   */
+  public record CoberturaMeteo(String ineCode, long filas, LocalDate primera, LocalDate ultima) {}
+
+  private static final String COBERTURA_SQL =
+      """
+      select m.ine_code,
+             count(mm.fecha) as filas,
+             min(mm.fecha)   as primera,
+             max(mm.fecha)   as ultima
+      from municipio m
+      left join meteo_municipio mm
+        on mm.ine_code = m.ine_code and mm.fecha between ? and ?
+      group by m.ine_code
+      order by m.ine_code
+      """;
 
   private static final String PUNTOS_SQL =
       """
@@ -80,6 +101,24 @@ public class MeteoMunicipioRepository {
                 rs.getDouble("lat"),
                 rs.getDouble("altitud_media_m"),
                 0.0));
+  }
+
+  /**
+   * Cobertura de meteo por municipio en {@code [inicio, corte]} para TODOS los municipios (los que
+   * no tienen dato salen con {@code filas=0}). Base de la verificación de completitud de {@code
+   * --finalize}.
+   */
+  public List<CoberturaMeteo> cobertura(LocalDate inicio, LocalDate corte) {
+    return jdbc.query(
+        COBERTURA_SQL,
+        (rs, n) ->
+            new CoberturaMeteo(
+                rs.getString("ine_code"),
+                rs.getLong("filas"),
+                rs.getObject("primera", LocalDate.class),
+                rs.getObject("ultima", LocalDate.class)),
+        inicio,
+        corte);
   }
 
   /** Nº de municipios cuyo punto de consulta NO cae dentro de su término (debe ser 0). */

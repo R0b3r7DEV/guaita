@@ -88,17 +88,25 @@ public class DiskGuard {
    * punto de reanudación en el log.
    */
   public void verificarAntesDeCadaAño(int año) {
+    verificarUmbral("antes del año " + año);
+  }
+
+  /**
+   * Aborta limpiamente si el libre está bajo el umbral en un punto de control dado. Se llama antes de
+   * abrir una transacción (por año, o antes del cálculo FWI de finalización), así lo ya escrito queda
+   * commiteado y consistente y el log dice dónde reanudar.
+   */
+  public void verificarUmbral(String contexto) {
     long libres = libresBytes();
     if (libres < minFreeBytes) {
       log.error(
-          "GUARDIA DE DISCO: libres {} GB < umbral {} GB antes del año {}."
-              + " Aborto limpio; reanuda desde {} cuando haya espacio.",
+          "GUARDIA DE DISCO: libres {} GB < umbral {} GB ({})."
+              + " Aborto limpio; reanuda cuando haya espacio.",
           libres / GB,
           minFreeBytes / GB,
-          año,
-          año);
+          contexto);
       throw new IllegalStateException(
-          "guardia de disco: espacio bajo el umbral antes del año " + año + " (reanudable)");
+          "guardia de disco: espacio bajo el umbral (" + contexto + ", reanudable)");
     }
   }
 }
