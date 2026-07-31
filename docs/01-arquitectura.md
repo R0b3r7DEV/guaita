@@ -211,3 +211,23 @@ levanta `db`, `api`, `web` (nginx sirviendo el build estático de Vite).
 Certificados por Let's Encrypt. Backup diario de PostgreSQL con `pg_dump`
 comprimido y rotación a 7 días — el geodato estático se puede reconstruir con
 `make seed`, pero los índices históricos calculados no.
+
+## Limitación operativa — estado y CI
+
+**Los runners de GitHub Actions no persisten estado entre ejecuciones.** Cada
+`workflow_dispatch` es una VM nueva: el volumen `db_data` nace vacío, se puebla
+durante el job y se destruye con la VM al terminar. Solo sobreviven los
+artefactos y lo commiteado. Consecuencia para GUAITA: **cualquier proceso con
+estado recursivo o incremental —el FWI encadena cada día sobre el anterior— NO
+puede trocearse en varios dispatches**, porque la reanudabilidad lee el estado
+previo de la BD y la BD no sobrevive. El primer informe de backfill (16
+municipios) funcionó porque hizo fetch → cálculo → informe en un solo job; su BD
+desapareció con la VM.
+
+Por eso el **backfill histórico completo (135 municipios × ~21 años) corre en el
+VPS contra una BD con volumen persistente**, no en Actions: IP propia con
+presupuesto diario fresco frente a la fuente externa, volumen que sobrevive a
+`make down`, sin límite de 90 min por job, y encima es el entorno de despliegue
+real. Actions queda para lo *sin estado*: build, tests, lint, smoke y el seed de
+geodato estático (idempotente y reconstruible). Regla general: **estado recursivo
+⇒ BD persistente ⇒ VPS, no CI.**

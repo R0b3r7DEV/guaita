@@ -1,5 +1,15 @@
 # Informe del backfill FWI
 
+> **⚠️ SUPERSEDED — describe datos que ya no existen.** Este informe salió de un
+> backfill de solo 16 municipios (eventos+control) sobre la BD EFÍMERA de un
+> runner de GitHub Actions; esa BD se destruyó con la VM al terminar (ver
+> `docs/01`, "Limitación operativa — estado y CI"). Los datos no están en ningún
+> sitio consultable. **Se regenera con los 135 municipios desde el VPS**
+> (arranque limpio ene-2005, cadena única, BD con volumen persistente), añadiendo
+> el gradiente provincial de FWI medio de julio por comarca. Los números de abajo
+> quedan solo como referencia de la validación preliminar (los 10 eventos en la
+> cola alta de su ventana ±15 días; Villanueva de Viver marzo-2023 en P95.5).
+
 Generado tras el backfill (docs/04). Serie continua, calentamiento excluido.
 
 Municipios en la serie: **16** (135 = provincia completa; menos = subconjunto eventos+control). Filas FWI: 126016.
