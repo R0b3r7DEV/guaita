@@ -126,8 +126,8 @@ public class BackfillService {
    * Verifica que la meteo está COMPLETA para calcular el FWI de golpe en {@code --finalize}: todos
    * los municipios presentes, cada uno con serie {@link #SERIE_INICIO}→{@code corte} sin huecos.
    * Devuelve la lista de problemas (vacía = completa) diciendo EXACTAMENTE qué falta; calcular el
-   * FWI sobre meteo incompleta produce una cadena rota que parece sana, así que esto manda: un tramo
-   * intermedio lanzado con {@code --finalize} por error se para aquí sin tocar nada.
+   * FWI sobre meteo incompleta produce una cadena rota que parece sana, así que esto manda: un
+   * tramo intermedio lanzado con {@code --finalize} por error se para aquí sin tocar nada.
    */
   public List<String> verificarMeteoCompleta(LocalDate corte) {
     long esperado = ChronoUnit.DAYS.between(SERIE_INICIO, corte) + 1;

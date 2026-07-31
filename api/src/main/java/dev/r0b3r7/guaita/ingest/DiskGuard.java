@@ -92,9 +92,9 @@ public class DiskGuard {
   }
 
   /**
-   * Aborta limpiamente si el libre está bajo el umbral en un punto de control dado. Se llama antes de
-   * abrir una transacción (por año, o antes del cálculo FWI de finalización), así lo ya escrito queda
-   * commiteado y consistente y el log dice dónde reanudar.
+   * Aborta limpiamente si el libre está bajo el umbral en un punto de control dado. Se llama antes
+   * de abrir una transacción (por año, o antes del cálculo FWI de finalización), así lo ya escrito
+   * queda commiteado y consistente y el log dice dónde reanudar.
    */
   public void verificarUmbral(String contexto) {
     long libres = libresBytes();
