@@ -62,7 +62,10 @@ public class DiskGuard {
     long estima = estimaBytes(desde, hasta, municipios);
     log.info(
         "guardia de disco en {}: libres {} GB, estimación del tramo {} MB, margen mínimo {} GB",
-        path.toAbsolutePath(), libres / GB, estima / MB, minFreeBytes / GB);
+        path.toAbsolutePath(),
+        libres / GB,
+        estima / MB,
+        minFreeBytes / GB);
     if (libres < estima + minFreeBytes) {
       throw new IllegalStateException(
           "disco insuficiente para el tramo "
