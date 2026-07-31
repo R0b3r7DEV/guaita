@@ -54,6 +54,53 @@ make ingest              # primera pasada de feeds
 
 Visor en `http://localhost:5173`, API en `http://localhost:8080/api/v1`.
 
+## Despliegue en VPS
+
+El VPS puede compartir máquina con otra plataforma en producción (XPL0DAY). El
+override [`docker-compose.vps.yml`](docker-compose.vps.yml) **no toca el compose
+base** y añade el blindaje para que GUAITA —y en particular el backfill, que
+escribe durante horas— no monopolice ni tumbe la máquina:
+
+- **Puertos remapeables** por `.env` (`DB_PORT_HOST`, `API_PORT_HOST`,
+  `WEB_PORT_HOST`) para esquivar colisiones sin editar ficheros.
+- **Límites de recursos** (`mem_limit`/`cpus`) en `db` (1 GB/1 CPU — PostGIS
+  sobre una provincia cabe de sobra) y `api` (1 GB/1 CPU — pico al parsear el
+  JSON horario de un año × 135 municipios, ~43 MB). Defaults conservadores;
+  ajústalos en `.env` tras mirar `free -h` y `docker stats`.
+- **Reinicio** `unless-stopped` en los servicios de larga duración.
+- **Rotación de logs** (`max-size`/`max-file`) en todos: sin ella el json-file de
+  Docker crece sin límite y llena el disco (caída clásica en VPS pequeños).
+
+```bash
+# Levantar con el override
+docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d --wait
+make seed        # geodatos base
+```
+
+### Backfill histórico desatendido
+
+El backfill NO corre en GitHub Actions (su BD es efímera: ver
+[docs/01](docs/01-arquitectura.md), "Limitación operativa"). Corre en el VPS,
+contra el volumen persistente, con una **guardia de disco** que aborta limpio
+(BD consistente, reanudable) si el libre baja de `DISK_MIN_FREE_GB` (5 GB por
+defecto), y que se niega a arrancar si el tramo no cabe con margen.
+
+```bash
+# Lanzar un tramo (ej. 2005-2008) sobreviviendo a la desconexión SSH:
+nohup docker compose -f docker-compose.yml -f docker-compose.vps.yml \
+  run --rm --name guaita-backfill \
+  -e SPRING_APPLICATION_JSON='{"guaita.backfill.run":true,"guaita.backfill.from":2005,"guaita.backfill.to":2008,"guaita.backfill.report-path":"/out/fwi-backfill.md"}' \
+  -v "$(pwd)/etl/reports:/out" \
+  api > "etl/reports/backfill-$(date +%Y%m%d-%H%M).log" 2>&1 &
+
+# Progreso en vivo (último año procesado + disco libre):
+grep -hE "meteo [0-9]{4} ->|GUARDIA DE DISCO" etl/reports/backfill-*.log | tail -n 3; \
+  df -h "${DISK_GUARD_HOST_PATH:-/}" | tail -1
+```
+
+Reanudar tras un aborto/parada = relanzar el mismo tramo: es idempotente y
+retoma el estado desde la BD.
+
 ## Documentación
 
 | Doc | Contenido |

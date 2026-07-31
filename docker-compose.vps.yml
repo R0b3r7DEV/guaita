@@ -1,0 +1,83 @@
+# ==========================================================================
+# Override de DESPLIEGUE en VPS. GUAITA puede convivir con XPL0DAY (en
+# producción): este override existe para que el backfill —horas escribiendo
+# y descargando— NO monopolice ni tumbe la máquina compartida.
+#
+#   NO toca docker-compose.yml (base). Todo parametrizable por .env, para
+#   esquivar colisiones de puerto y ajustar recursos SIN editar ficheros.
+#
+# Uso:
+#   docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d --wait
+#   docker compose -f docker-compose.yml -f docker-compose.vps.yml down
+#
+# Los valores por defecto son conservadores (pensados para dejar aire a lo
+# que ya corre en el VPS); ajústalos en .env tras ver `free -h` y
+# `docker stats`. Justificación de cada límite en el README (§Despliegue VPS).
+# ==========================================================================
+services:
+  db:
+    # Puerto del host remapeable: si 5432 lo ocupa otro Postgres (XPL0DAY),
+    # DB_PORT_HOST=5433 y listo. El puerto INTERNO (api->db) sigue siendo 5432.
+    ports:
+      - "${DB_PORT_HOST:-5432}:5432"
+    restart: unless-stopped
+    # 1 GB basta para PostGIS sobre una provincia (~1 GB de datos, ~1 M filas);
+    # 1 CPU absorbe los picos de las agregaciones/percentiles del informe sin
+    # comerse los núcleos que necesita producción.
+    mem_limit: ${DB_MEM_LIMIT:-1g}
+    cpus: ${DB_CPUS:-1.0}
+    # Rotación de logs: sin esto, el json-file de Docker crece sin límite y
+    # llena el disco (causa clásica de caída en VPS pequeños).
+    logging:
+      driver: json-file
+      options:
+        max-size: "${LOG_MAX_SIZE:-10m}"
+        max-file: "${LOG_MAX_FILE:-3}"
+
+  api:
+    ports:
+      - "${API_PORT_HOST:-8080}:8080"
+    restart: unless-stopped
+    # 1 GB porque el backfill parsea la respuesta horaria de un año para 135
+    # localizaciones (~43 MB de JSON) en memoria; con MaxRAMPercentage=75 el
+    # heap queda ~768 MB, holgado para ese pico. 1 CPU.
+    mem_limit: ${API_MEM_LIMIT:-1g}
+    cpus: ${API_CPUS:-1.0}
+    environment:
+      # El heap se dimensiona respecto al límite del contenedor, no al host.
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
+      # Guardia de disco: vigila el disco del HOST (bind read-only de abajo),
+      # no el efímero del contenedor. Umbral configurable.
+      GUAITA_BACKFILL_DISK_GUARD_PATH: /hostdisk
+      GUAITA_BACKFILL_DISK_MIN_FREE_GB: ${DISK_MIN_FREE_GB:-5}
+    volumes:
+      # Disco del host montado SOLO-LECTURA para que la guardia mida el espacio
+      # real donde viven el volumen de Postgres y /data. Por defecto la raíz;
+      # si Docker vive en otra partición, apúntala con DISK_GUARD_HOST_PATH.
+      - "${DISK_GUARD_HOST_PATH:-/}:/hostdisk:ro"
+    logging:
+      driver: json-file
+      options:
+        max-size: "${LOG_MAX_SIZE:-10m}"
+        max-file: "${LOG_MAX_FILE:-3}"
+
+  web:
+    ports:
+      - "${WEB_PORT_HOST:-5173}:80"
+    restart: unless-stopped
+    # nginx sirviendo estáticos: mínimo.
+    mem_limit: ${WEB_MEM_LIMIT:-256m}
+    cpus: ${WEB_CPUS:-0.5}
+    logging:
+      driver: json-file
+      options:
+        max-size: "${LOG_MAX_SIZE:-10m}"
+        max-file: "${LOG_MAX_FILE:-3}"
+
+  # Sin restart (es un one-shot del profile etl); solo rotación de logs.
+  etl:
+    logging:
+      driver: json-file
+      options:
+        max-size: "${LOG_MAX_SIZE:-10m}"
+        max-file: "${LOG_MAX_FILE:-3}"

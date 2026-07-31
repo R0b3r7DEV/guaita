@@ -30,6 +30,7 @@ class BackfillRunner implements ApplicationRunner {
   private final BackfillService backfill;
   private final OpenMeteoClient client;
   private final FwiBackfillReport report;
+  private final DiskGuard diskGuard;
 
   @Value("${guaita.backfill.run:false}")
   private boolean run;
@@ -53,11 +54,13 @@ class BackfillRunner implements ApplicationRunner {
       MeteoMunicipioRepository meteoRepo,
       BackfillService backfill,
       OpenMeteoClient client,
-      FwiBackfillReport report) {
+      FwiBackfillReport report,
+      DiskGuard diskGuard) {
     this.meteoRepo = meteoRepo;
     this.backfill = backfill;
     this.client = client;
     this.report = report;
+    this.diskGuard = diskGuard;
   }
 
   @Override
@@ -73,6 +76,8 @@ class BackfillRunner implements ApplicationRunner {
       base = filtrar(base, ineCodes);
       log.info("subconjunto de {} municipios: {}", base.size(), ineCodes);
     }
+    // Guardia de disco: imprime libre + estimación y se niega a arrancar si no cabe con margen.
+    diskGuard.verificarAntesDeArrancar(desde, hasta, base.size());
     LocalDate corte = client.corteArchivo(base.get(0));
     log.info(
         "backfill {}..{}, corte del archivo = {}, {} municipios", desde, hasta, corte, base.size());
@@ -90,6 +95,8 @@ class BackfillRunner implements ApplicationRunner {
       // Open-Meteo cuenta cada localización como una "call": 135/año. A 40 s ~ 200/min, holgado
       // bajo el límite del tier gratuito (600 calls/min).
       Thread.sleep(40_000);
+      // Antes de abrir la transacción del año: aborta limpio si el disco baja del umbral.
+      diskGuard.verificarAntesDeCadaAño(año);
       int n = backfill.backfillMeteoAño(puntos, año, corte);
       log.info("meteo {} -> {} filas", año, n);
     }
