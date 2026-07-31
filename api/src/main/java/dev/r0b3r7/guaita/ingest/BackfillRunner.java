@@ -65,6 +65,7 @@ class BackfillRunner implements ApplicationRunner {
     log.info(
         "backfill {}..{}, corte del archivo = {}, {} municipios", desde, hasta, corte, base.size());
 
+    Thread.sleep(30_000); // separa la petición de cotas (135 calls) de la sonda de corte
     Map<String, Double> nativas = client.elevacionesNativas(base, corte);
     List<PuntoMeteo> puntos = new ArrayList<>(base.size());
     for (PuntoMeteo p : base) {
@@ -74,17 +75,19 @@ class BackfillRunner implements ApplicationRunner {
     }
 
     for (int año = desde; año <= hasta; año++) {
+      // Open-Meteo cuenta cada localización como una "call": 135/año. A 40 s ~ 200/min, holgado
+      // bajo el límite del tier gratuito (600 calls/min).
+      Thread.sleep(40_000);
       int n = backfill.backfillMeteoAño(puntos, año, corte);
       log.info("meteo {} -> {} filas", año, n);
-      // Open-Meteo cuenta cada localización como una "call": 135/año. Espaciar los años mantiene
-      // el ritmo por debajo del límite del tier gratuito (600 calls/min).
-      Thread.sleep(15_000);
     }
     for (PuntoMeteo p : puntos) {
       backfill.computeFwiMunicipio(p.ineCode());
     }
     report.asserciones();
-    Files.writeString(Path.of(reportPath), report.informe());
+    String md = report.informe();
+    log.info("=== INFORME fwi-backfill ===\n{}", md); // a stdout también, por si el volumen falla
+    Files.writeString(Path.of(reportPath), md);
     log.info("informe escrito en {}", reportPath);
 
     System.exit(0);

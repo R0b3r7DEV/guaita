@@ -41,7 +41,8 @@ jobs:
 
       - name: Backfill (meteo por años + FWI + aserciones + informe)
         run: |
-          mkdir -p etl/reports
+          set -o pipefail
+          mkdir -p etl/reports && chmod 777 etl/reports
           docker compose run --rm \
             -e SPRING_APPLICATION_JSON='{"guaita.backfill.run":true,"guaita.backfill.from":${{ github.event.inputs.from }},"guaita.backfill.to":${{ github.event.inputs.to }},"guaita.backfill.report-path":"/out/fwi-backfill.md"}' \
             -v "${{ github.workspace }}/etl/reports:/out" \

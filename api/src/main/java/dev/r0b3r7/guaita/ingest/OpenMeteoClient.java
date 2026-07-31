@@ -29,7 +29,9 @@ public final class OpenMeteoClient {
   private static final String HOURLY =
       "temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation";
   private static final String USER_AGENT = "guaita/0.1 (+https://github.com/R0b3r7DEV/guaita)";
-  private static final int MAX_ATTEMPTS = 4;
+  // 6 intentos con backoff base 4 s -> hasta ~124 s acumulados: aguanta el límite POR MINUTO de
+  // Open-Meteo (429), que un backoff de milisegundos no ríe (cada localización cuenta como 1 call).
+  private static final int MAX_ATTEMPTS = 6;
 
   private final String baseUrl;
   private final HttpClient http;
@@ -43,7 +45,7 @@ public final class OpenMeteoClient {
         HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(15)).build(),
         new ObjectMapper(),
         new OpenMeteoMapper(),
-        Duration.ofMillis(500));
+        Duration.ofSeconds(4));
   }
 
   OpenMeteoClient(
