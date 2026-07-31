@@ -174,9 +174,28 @@ Percentiles sobre la serie histórica **local** de cada municipio, no umbrales
 absolutos. Un FWI de 30 en el Maestrat húmedo no significa lo mismo que en el
 Palancia.
 
+**La distribución de referencia es una VENTANA ESTACIONAL móvil por día del año,
+NO los 365 días.** La cadena FWI es continua todo el año (es física); la
+distribución de referencia es estadística y va aparte: el FWI de hoy se compara
+contra los mismos días del año (**±15 días**) de TODOS los años de la serie del
+municipio.
+
 ```
-comp_meteo = percentil(fwi_hoy, distribución histórica FWI del municipio) * 100
+comp_meteo = percentil(fwi_hoy, { FWI de los días [doy−15, doy+15] de todos los años }) * 100
 ```
+
+**Por qué no los 365 días.** Con cadena continua, la mayoría de los días son
+invierno con FWI ≈ 0; usar los 365 comprimiría la distribución hacia abajo y un
+julio mediocre saldría en el percentil 85 solo por competir contra enero — el
+índice saldría alto casi todo el verano y perdería poder discriminante, justo lo
+que mide el AUC de Fase 4. La ventana ±15 días mide cada día contra su propia
+época: un 23 de marzo se compara con finales de marzo de todos los años, no con
+agosto. Es lo que permite que un evento de marzo (Villanueva de Viver) salga en su
+cola alta si fue anómalo. (21 años × 31 días ≈ 650 muestras por día del año:
+suficiente para un percentil estable; ampliable a ±30 si la cola alta lo pidiera.)
+Es el criterio de los productos de anomalía de fire weather (EFFIS Anomaly,
+climatología por ventana). **Decidido en Fase 2; se implementa en Fase 3** (es
+`comp_meteo`).
 
 Requiere ≥ 10 años de reanálisis para que los percentiles sean estables. Es la
 razón por la que el histórico de Open-Meteo entra en el alcance.
