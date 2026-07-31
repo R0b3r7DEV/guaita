@@ -44,7 +44,8 @@ class BackfillRunner implements ApplicationRunner {
   private String reportPath;
 
   // Subconjunto de ine_codes (coma-separado). Vacío = los 135 municipios. Sirve para backfillear
-  // solo eventos+control con historia completa cuando el presupuesto de Open-Meteo no da para todos.
+  // solo eventos+control con historia completa cuando el presupuesto de Open-Meteo no da para
+  // todos.
   @Value("${guaita.backfill.ine-codes:}")
   private String ineCodes;
 
