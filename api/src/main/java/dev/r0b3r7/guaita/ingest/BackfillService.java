@@ -14,10 +14,10 @@ import org.springframework.transaction.annotation.Transactional;
  * petición multi-coord por año) y el FWI se calcula sobre la serie CONTINUA, todo reanudable.
  *
  * <p><b>La trampa del backfill</b> (recursión + reanudabilidad): si al retomar un tramo se reinicia
- * con los valores de arranque (85/6/15) en vez de leer el estado del día anterior desde
- * {@code fwi_municipio}, el DC se resetea a mitad de verano y la serie sigue pareciendo normal. Por
- * eso {@link #computeFwiMunicipio} SIEMPRE lee el estado previo de la BD y solo arranca con los
- * valores de arranque el primer día absoluto de la serie ({@link #SERIE_INICIO}).
+ * con los valores de arranque (85/6/15) en vez de leer el estado del día anterior desde {@code
+ * fwi_municipio}, el DC se resetea a mitad de verano y la serie sigue pareciendo normal. Por eso
+ * {@link #computeFwiMunicipio} SIEMPRE lee el estado previo de la BD y solo arranca con los valores
+ * de arranque el primer día absoluto de la serie ({@link #SERIE_INICIO}).
  */
 @Service
 public class BackfillService {
@@ -67,9 +67,9 @@ public class BackfillService {
 
   /**
    * Calcula el FWI de la serie continua de un municipio, REANUDABLE. Lee el estado previo de la BD;
-   * solo arranca con 85/6/15 si {@code fwi_municipio} está vacío para el municipio. Marca
-   * {@code calentamiento} los 30 primeros días de la serie. Exige serie meteo consecutiva: un hueco
-   * aborta con error, no en silencio.
+   * solo arranca con 85/6/15 si {@code fwi_municipio} está vacío para el municipio. Marca {@code
+   * calentamiento} los 30 primeros días de la serie. Exige serie meteo consecutiva: un hueco aborta
+   * con error, no en silencio.
    */
   @Transactional
   public int computeFwiMunicipio(String ineCode) {
