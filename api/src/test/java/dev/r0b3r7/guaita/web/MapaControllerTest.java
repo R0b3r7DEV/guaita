@@ -32,6 +32,8 @@ class MapaControllerTest {
 
   @BeforeEach
   void sembrarYRefrescar() {
+    jdbc.update("delete from meteo_municipio where ine_code = '12040'");
+    jdbc.update("delete from topografia_municipio where ine_code = '12040'");
     jdbc.update("delete from municipio where ine_code = '12040'");
     jdbc.update(
         "insert into municipio (ine_code, nombre, comarca, geom, superficie_ha, poblacion) "
