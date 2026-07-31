@@ -108,9 +108,12 @@ public class BackfillService {
       FwiWeather w = new FwiWeather(m.temp(), m.hr(), m.viento(), m.precip());
       FwiCodes c = fwi.step(f, p, d, m.fecha().getMonthValue(), w);
       fwiRepo.upsert(ineCode, m.fecha(), c, !m.fecha().isAfter(finCalentamiento));
-      f = c.ffmc();
-      p = c.dmc();
-      d = c.dc();
+      // El estado se arrastra a la PRECISIÓN PERSISTIDA (numeric(_,2)): así reanudar leyendo de la
+      // BD da EXACTAMENTE lo mismo que calcular de golpe. Con full-precision, un reinicio tras un
+      // corte divergiría por redondeo y la serie no sería reproducible.
+      f = round2(c.ffmc());
+      p = round2(c.dmc());
+      d = round2(c.dc());
       previa = m.fecha();
       n++;
     }
@@ -130,5 +133,10 @@ public class BackfillService {
                 rs.getDouble("precip_24h_mm")),
         ineCode,
         desde);
+  }
+
+  /** Redondea a 2 decimales (precisión de fwi_municipio); positivos: half-up = Postgres. */
+  private static double round2(double v) {
+    return Math.round(v * 100.0) / 100.0;
   }
 }
