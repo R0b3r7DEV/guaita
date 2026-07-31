@@ -35,6 +35,8 @@ etl/reports/*
 !etl/reports/.gitkeep
 # La tabla de descarga del MDT25 es un doc deliberado (lista de la compra), sí se versiona
 !etl/reports/mdt25-descarga.md
+# El informe del backfill FWI es un entregable (validación de Fase 2), sí se versiona
+!etl/reports/fwi-backfill.md
 
 # --- IDE / editor ---
 .idea/
