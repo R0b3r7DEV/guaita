@@ -151,10 +151,11 @@ create table meteo_municipio (
 ```sql
 -- Códigos FWI. Recursivos: cada día depende del anterior. Ver doc 04.
 -- Consume la entrada meteorológica de meteo_municipio por (ine_code, fecha): la
--- FK compuesta hace cumplir esa dependencia (no hay FWI sin su meteo). La columna
--- `calentamiento` marca los ~30 primeros días de cada temporada (tras los valores
--- de arranque el modelo aún no ha convergido) para poder excluirlos del backtest
--- (doc 04 §1); no se deja implícito.
+-- FK compuesta hace cumplir esa dependencia (no hay FWI sin su meteo). La cadena
+-- es CONTINUA todo el año (criterio EFFIS, doc 04 §1): arranque una sola vez al
+-- inicio de la serie, sin reinicio por temporada. La columna `calentamiento`
+-- marca los ~30 primeros días de TODA la serie (el modelo aún no ha convergido)
+-- para excluirlos del backtest; no se deja implícito.
 create table fwi_municipio (
   ine_code      char(5) not null references municipio(ine_code),
   fecha         date    not null,

@@ -81,10 +81,26 @@ Puntos que hay que respetar sí o sí:
 - **Los tres códigos de humedad son recursivos.** El valor de hoy depende del de
   ayer. Hay que persistir el estado (tabla `fwi_municipio`) y no se puede
   calcular un día suelto sin cadena previa.
-- **Valores de arranque** (`startup values`) estándar: FFMC 85, DMC 6, DC 15.
-  Aplicar tras un periodo de lluvias. Para el histórico, arrancar el 1 de marzo
-  de cada año y **descartar los primeros 30 días** como calentamiento del modelo.
-  Si el backtest incluye esos días, los resultados son basura.
+- **Arranque y calentamiento — CADENA CONTINUA todo el año (criterio EFFIS).**
+  Valores de arranque estándar FFMC 85, DMC 6, DC 15, aplicados **UNA sola vez**
+  al inicio de toda la serie histórica (1-ene-2005), NO cada temporada. La cadena
+  recursiva corre **todos los días del año sin reinicio**, igual que EFFIS, que
+  opera el FWI durante todo el año (núcleo de campaña 1-mar a 31-oct). Solo los
+  **~30 primeros días de la serie completa** (ene-2005) se marcan como
+  calentamiento (`calentamiento=true` en `fwi_municipio`) y se excluyen del
+  backtest; el resto de la serie es válido.
+  > **Por qué NO reiniciar por temporada (con fuente).** El criterio canadiense de
+  > reiniciar cada primavera y descartar 30 días **excluiría por construcción a
+  > Villanueva de Viver (23-mar-2023, 4.700 ha)**, uno de los cuatro eventos
+  > semilla del backtest (docs/03); y que un gran incendio ocurra en marzo
+  > demuestra que la temporada mediterránea no arranca en la fecha canadiense. La
+  > cadena continua lo incluye. No hace falta el procedimiento formal de
+  > *overwintering* del DC (Van Wagner 1987): al no reiniciar, el DC se arrastra
+  > solo por el invierno, y en el interior de Castellón la precipitación invernal
+  > recarga la capa profunda (Lawson & Armitage 2008: el overwintering es
+  > innecesario donde la precipitación de invierno supera ~200 mm). Fuentes:
+  > EFFIS/Copernicus *Fire Danger Forecast*; GEFF, Vitolo et al. 2020 (ESSD
+  > 12:1823), reanálisis continuo de fire weather.
 - **Longitud de día.** DMC y DC llevan factores dependientes del mes (Tablas 1 y
   2 de Van Wagner & Pickett 1985) tabulados para latitudes canadienses (≈46°N).
   Para otras latitudes, Lawson & Armitage (2008) proponen factores ajustados por
