@@ -166,10 +166,7 @@ public class FwiBackfillReport {
                 + " select (select fwi from ev) fwi_ev,"
                 + " (select count(*) filter (where vent.fwi <= (select fwi from ev))::float"
                 + " / nullif(count(*),0) from vent) pct",
-            e.ineCode(),
-            e.fecha(),
-            e.ineCode(),
-            doy);
+            e.ineCode(), e.fecha(), e.ineCode(), doy);
     return r.isEmpty() ? null : r.get(0);
   }
 }
