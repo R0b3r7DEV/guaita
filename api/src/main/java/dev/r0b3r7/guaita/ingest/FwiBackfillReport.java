@@ -109,20 +109,21 @@ public class FwiBackfillReport {
             + " round((percentile_cont(0.95) within group (order by fwi))::numeric,1) p95,"
             + " round((percentile_cont(0.99) within group (order by fwi))::numeric,1) p99"
             + " from fwi_municipio where not calentamiento group by y order by y",
-        rs ->
-            md.append("| ")
-                .append(rs.getInt("y"))
-                .append(" | ")
-                .append(rs.getBigDecimal("med"))
-                .append(" | ")
-                .append(rs.getBigDecimal("mx"))
-                .append(" | ")
-                .append(rs.getBigDecimal("p90"))
-                .append(" | ")
-                .append(rs.getBigDecimal("p95"))
-                .append(" | ")
-                .append(rs.getBigDecimal("p99"))
-                .append(" |\n"));
+        (java.sql.ResultSet rs) -> {
+          md.append("| ")
+              .append(rs.getInt("y"))
+              .append(" | ")
+              .append(rs.getBigDecimal("med"))
+              .append(" | ")
+              .append(rs.getBigDecimal("mx"))
+              .append(" | ")
+              .append(rs.getBigDecimal("p90"))
+              .append(" | ")
+              .append(rs.getBigDecimal("p95"))
+              .append(" | ")
+              .append(rs.getBigDecimal("p99"))
+              .append(" |\n");
+        });
 
     md.append("\n## b) Validación de eventos (percentil en ventana ±15 días del municipio)\n\n");
     md.append("| evento | fecha | FWI | percentil |\n|---|---|---|---|\n");
