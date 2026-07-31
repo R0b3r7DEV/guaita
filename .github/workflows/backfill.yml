@@ -14,6 +14,9 @@ on:
       to:
         description: "Año final (se recorta al último día del archivo, ~D-6)"
         default: "2026"
+      ine_codes:
+        description: "Subconjunto de municipios (coma-sep). Vacío = los 135. Por defecto: eventos+control."
+        default: "12022,12071,12140,12114,12122,12049,12060,12072,12133,12126,12077,12082,12011,12080,12139,12130"
 
 permissions:
   contents: read
@@ -44,7 +47,7 @@ jobs:
           set -o pipefail
           mkdir -p etl/reports && chmod 777 etl/reports
           docker compose run --rm \
-            -e SPRING_APPLICATION_JSON='{"guaita.backfill.run":true,"guaita.backfill.from":${{ github.event.inputs.from }},"guaita.backfill.to":${{ github.event.inputs.to }},"guaita.backfill.report-path":"/out/fwi-backfill.md"}' \
+            -e SPRING_APPLICATION_JSON='{"guaita.backfill.run":true,"guaita.backfill.from":${{ github.event.inputs.from }},"guaita.backfill.to":${{ github.event.inputs.to }},"guaita.backfill.ine-codes":"${{ github.event.inputs.ine_codes }}","guaita.backfill.report-path":"/out/fwi-backfill.md"}' \
             -v "${{ github.workspace }}/etl/reports:/out" \
             api 2>&1 | tee backfill.log
 

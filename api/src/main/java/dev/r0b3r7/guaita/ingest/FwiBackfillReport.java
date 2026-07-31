@@ -101,7 +101,17 @@ public class FwiBackfillReport {
     md.append("# Informe del backfill FWI\n\n");
     md.append("Generado tras el backfill (docs/04). Serie continua, calentamiento excluido.\n\n");
 
-    md.append("## a) Por año (provincial, sin calentamiento)\n\n");
+    Integer nMunis =
+        jdbc.queryForObject("select count(distinct ine_code) from fwi_municipio", Integer.class);
+    Integer nDias = jdbc.queryForObject("select count(*) from fwi_municipio", Integer.class);
+    md.append("Municipios en la serie: **")
+        .append(nMunis)
+        .append("** (135 = provincia completa; menos = subconjunto eventos+control). ")
+        .append("Filas FWI: ")
+        .append(nDias)
+        .append(".\n\n");
+
+    md.append("## a) Por año (sin calentamiento)\n\n");
     md.append("| año | FWI medio | máx | P90 | P95 | P99 |\n|---|---|---|---|---|---|\n");
     jdbc.query(
         "select extract(year from fecha)::int y, round(avg(fwi),1) med, round(max(fwi),1) mx,"

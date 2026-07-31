@@ -200,6 +200,18 @@ climatología por ventana). **Decidido en Fase 2; se implementa en Fase 3** (es
 Requiere ≥ 10 años de reanálisis para que los percentiles sean estables. Es la
 razón por la que el histórico de Open-Meteo entra en el alcance.
 
+**Presupuesto de Open-Meteo y estrategia de backfill.** El tier gratuito pondera
+fuerte cada petición de un año horario (43 MB para 135 municipios); ~4-5 de ellas
+agotan el límite y devuelven 429, así que **el backfill completo de los 135
+municipios × 21 años no cabe en una sola tirada** (verificado: 2005-2008 entran,
+2009 corta). No es un fallo del pipeline —los años que entran se persisten bien—
+sino un límite externo de la fuente. Estrategia: el runner acepta
+`guaita.backfill.ine-codes` para backfillear primero el **subconjunto
+eventos+control (16 municipios) con historia completa** —que sí cabe y produce la
+validación de Fase 2 (percentil ±15 de cada evento + julio de control)— y dejar el
+provincial completo para tramos de años posteriores (parámetros `from`/`to`) o una
+key de mayor límite. El informe declara cuántos municipios cubre.
+
 ---
 
 ## 2. Componente estructural

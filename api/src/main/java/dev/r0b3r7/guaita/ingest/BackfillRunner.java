@@ -4,8 +4,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,6 +43,11 @@ class BackfillRunner implements ApplicationRunner {
   @Value("${guaita.backfill.report-path:/out/fwi-backfill.md}")
   private String reportPath;
 
+  // Subconjunto de ine_codes (coma-separado). Vacío = los 135 municipios. Sirve para backfillear
+  // solo eventos+control con historia completa cuando el presupuesto de Open-Meteo no da para todos.
+  @Value("${guaita.backfill.ine-codes:}")
+  private String ineCodes;
+
   BackfillRunner(
       MeteoMunicipioRepository meteoRepo,
       BackfillService backfill,
@@ -60,6 +67,10 @@ class BackfillRunner implements ApplicationRunner {
     List<PuntoMeteo> base = meteoRepo.puntosDeConsulta();
     if (base.isEmpty()) {
       throw new IllegalStateException("no hay municipios/topografía sembrados: ejecuta make seed");
+    }
+    if (!ineCodes.isBlank()) {
+      base = filtrar(base, ineCodes);
+      log.info("subconjunto de {} municipios: {}", base.size(), ineCodes);
     }
     LocalDate corte = client.corteArchivo(base.get(0));
     log.info(
@@ -91,5 +102,26 @@ class BackfillRunner implements ApplicationRunner {
     log.info("informe escrito en {}", reportPath);
 
     System.exit(0);
+  }
+
+  /** Filtra a los ine_codes pedidos; falla si alguno no casa (typo, no silencio). */
+  private static List<PuntoMeteo> filtrar(List<PuntoMeteo> base, String csv) {
+    Set<String> keep = new HashSet<>();
+    for (String s : csv.split(",")) {
+      if (!s.isBlank()) {
+        keep.add(s.trim());
+      }
+    }
+    List<PuntoMeteo> out = new ArrayList<>();
+    for (PuntoMeteo p : base) {
+      if (keep.contains(p.ineCode())) {
+        out.add(p);
+      }
+    }
+    if (out.size() != keep.size()) {
+      throw new IllegalStateException(
+          "subconjunto pedía " + keep.size() + " ine_codes pero solo casaron " + out.size());
+    }
+    return out;
   }
 }
