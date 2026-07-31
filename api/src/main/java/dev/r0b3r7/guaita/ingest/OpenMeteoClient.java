@@ -81,6 +81,27 @@ public final class OpenMeteoClient {
   }
 
   /**
+   * Último día con dato en el archivo (ERA5 tiene ~5-6 días de lag). Pedir más reciente devuelve
+   * nulls que pasarían la validación como datos, así que el backfill recorta a esta fecha.
+   */
+  public LocalDate corteArchivo(PuntoMeteo sonda) {
+    LocalDate hoy = LocalDate.now(java.time.ZoneOffset.UTC);
+    List<OpenMeteoArchive> locs =
+        parse(get(buildUrl(List.of(sonda), hoy.minusDays(12), hoy, false)));
+    OpenMeteoArchive.Hourly h = locs.get(0).hourly();
+    LocalDate ultimo = null;
+    for (int i = 0; i < h.time().size(); i++) {
+      if (h.temperature2m().get(i) != null) {
+        ultimo = LocalDate.parse(h.time().get(i).substring(0, 10));
+      }
+    }
+    if (ultimo == null) {
+      throw new IllegalStateException("el archivo no devolvió ningún dato reciente");
+    }
+    return ultimo;
+  }
+
+  /**
    * Cota NATIVA del modelo en cada punto (petición SIN {@code elevation}). Estática por municipio;
    * alimenta la calidad del dato (delta de altitud). Devuelve {@code ine_code -> elevación (m)}.
    */

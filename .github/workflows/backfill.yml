@@ -1,0 +1,64 @@
+# ==========================================================================
+# Backfill histórico de meteo (Open-Meteo ERA5-Seamless) y FWI (docs/04, ADR-07).
+# Disparo MANUAL únicamente (workflow_dispatch). NUNCA en push: es caro (baja
+# ~21 años de reanálisis) y toca la BD. Reanudable e idempotente.
+# ==========================================================================
+name: Backfill FWI (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      from:
+        description: "Año inicial"
+        default: "2005"
+      to:
+        description: "Año final (se recorta al último día del archivo, ~D-6)"
+        default: "2026"
+
+permissions:
+  contents: read
+
+jobs:
+  backfill:
+    name: backfill meteo + FWI + informe
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Preparar .env (contraseña generada al vuelo)
+        run: |
+          cp .env.example .env
+          sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$(openssl rand -hex 16)|" .env
+
+      - name: Levantar db + api (Flyway aplica V1..V8)
+        run: docker compose up -d --build --wait db api
+
+      - name: make seed (municipio + topografía = coordenadas del backfill)
+        run: |
+          set -o pipefail
+          make seed 2>&1 | tee seed.log
+
+      - name: Backfill (meteo por años + FWI + aserciones + informe)
+        run: |
+          mkdir -p etl/reports
+          docker compose run --rm \
+            -e SPRING_APPLICATION_JSON='{"guaita.backfill.run":true,"guaita.backfill.from":${{ github.event.inputs.from }},"guaita.backfill.to":${{ github.event.inputs.to }},"guaita.backfill.report-path":"/out/fwi-backfill.md"}' \
+            -v "${{ github.workspace }}/etl/reports:/out" \
+            api 2>&1 | tee backfill.log
+
+      - name: Subir informe y logs
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: fwi-backfill
+          path: |
+            etl/reports/fwi-backfill.md
+            backfill.log
+            seed.log
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: make down
+        if: always()
+        run: make down
