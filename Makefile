@@ -1,7 +1,7 @@
 # GUAITA — atajos de desarrollo. Requiere Docker Compose v2.
 # Las migraciones Flyway se aplican solas al arrancar la api (Spring Boot).
 
-.PHONY: up down logs migrate test lint seed ingest backtest
+.PHONY: up down logs migrate test lint seed ingest backtest backfill-check
 
 up:            ## Levanta db, api y web; bloquea hasta que estén healthy
 	docker compose up -d --build --wait
@@ -24,6 +24,9 @@ lint:          ## Formato/estilo: Spotless (api) + typecheck (web)
 
 seed:          ## [Fase 1] Carga idempotente de geodatos estáticos (contenedor etl)
 	docker compose --profile etl run --rm etl ./seed.sh
+
+backfill-check: ## [Fase 2] Valida la meteo ingerida (correr tras CADA tramo, antes del siguiente)
+	bash ops/backfill_check.sh
 
 comarcas:      ## [Fase 1] Regenera etl/mappings/comarcas_castellon.csv desde el PEGV (one-shot, deliberado)
 	docker compose --profile etl run --rm etl bash ./build_comarcas.sh

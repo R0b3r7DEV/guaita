@@ -130,6 +130,27 @@ docker stats guaita-backfill        # en vivo; Ctrl-C para salir (--no-stream = 
 Reanudar tras un aborto/parada = relanzar el mismo tramo: es idempotente y
 retoma el estado desde la BD (que ahora persiste en el volumen del VPS).
 
+### Validación temprana — `make backfill-check`
+
+La primera comprobación de correctitud NO puede esperar al tramo final: si el T1
+ingiere con la hora equivocada o sin corrección altitudinal, hay que enterarse el
+día 1, no el día 3 con la serie entera contaminada. **Corre `make backfill-check`
+tras CADA tramo, antes de lanzar el siguiente** (sale con error si algo falla):
+
+```bash
+bash ops/backfill.sh tramo 2005 2008
+bash ops/backfill.sh espera
+make backfill-check      # <- aquí, antes del T2
+```
+
+Verifica sobre lo ingerido hasta ese momento: cobertura rectangular (135
+municipios, todos con el mismo nº de días), `elevacion_celda_m`/`delta_altitud_m`
+no NULL, rangos físicos (temp −20..50, HR 0..100, viento ≥ 0), estacionalidad
+(un día de verano debe ser más cálido que uno de invierno; si no, hay un fallo de
+índice horario / zona), y una tabla de los 6 municipios de control con celda,
+altitud, delta y T/HR de un día de verano —Vistabella y Villahermosa con
+corrección apreciable, los costeros casi nula—.
+
 ## Documentación
 
 | Doc | Contenido |
