@@ -10,7 +10,9 @@
 #
 # Uso (desde la raíz del repo):
 #   bash ops/backfill.sh tramo <desde> <hasta> [finalize]   # lanza desatendido
-#   bash ops/backfill.sh espera                              # espera y da el veredicto
+#   bash ops/backfill.sh tramo-dry                          # ENSAYO: 1 año x 5 municipios
+#   bash ops/backfill.sh dry-limpia                         # borra lo del ensayo
+#   bash ops/backfill.sh espera                             # espera y da el veredicto
 #
 set -euo pipefail
 
@@ -20,6 +22,11 @@ STAMP_FILE="$REPORTS_DIR/.last-tramo-end"
 RC_FILE="$REPORTS_DIR/.last-tramo-rc"
 MIN_INTERVAL="${GUAITA_BACKFILL_MIN_INTERVAL_SECS:-3600}"
 COMPOSE=(docker compose -f docker-compose.yml -f docker-compose.vps.yml)
+
+# Ensayo en seco: 5 municipios (5 de los 6 de control: 3 de interior de montaña
+# con corrección altitudinal apreciable + 2 costeros con delta ~0) y un año.
+DRY_INES="12139,12130,12080,12077,12011"
+DRY_YEAR="${GUAITA_DRY_YEAR:-2020}"
 
 [ -f docker-compose.yml ] || {
   echo "ejecuta desde la raíz del repo (no encuentro docker-compose.yml)" >&2
@@ -44,10 +51,9 @@ mostrar_rc() {
   fi
 }
 
-tramo() {
-  local desde="${1:?uso: tramo <desde> <hasta> [finalize]}"
-  local hasta="${2:?uso: tramo <desde> <hasta> [finalize]}"
-  local fin="${3:-false}"
+# Guardas comunes + lanzamiento desatendido. Args: desde hasta finalize ine_codes
+_lanza() {
+  local desde=$1 hasta=$2 fin=$3 ines=$4
 
   # 1. Concurrencia: nunca dos tramos a la vez (el 429 seguro).
   if hay_tramo; then
@@ -74,17 +80,29 @@ tramo() {
   fi
 
   local log="$REPORTS_DIR/backfill-$desde-$hasta-$(date +%Y%m%d-%H%M).log"
-  echo "lanzando tramo $desde-$hasta (finalize=$fin) -> $log"
+  echo "lanzando tramo $desde-$hasta (finalize=$fin, ine_codes='${ines:-todos}') -> $log"
   # Trabajo desatendido: nos reinvocamos con el subcomando interno _run bajo nohup.
   # Así el JSON no viaja entre comillas anidadas y el fin/rc se registran siempre.
-  nohup bash "$0" _run "$desde" "$hasta" "$fin" "$log" >/dev/null 2>&1 &
+  nohup bash "$0" _run "$desde" "$hasta" "$fin" "$log" "$ines" >/dev/null 2>&1 &
   echo "PID $!. Sigue con:  bash ops/backfill.sh espera   (o  tail -f $log)"
 }
 
-# Interno (lo lanza `tramo` bajo nohup): corre un tramo síncrono y registra rc + fin.
+tramo() {
+  local desde="${1:?uso: tramo <desde> <hasta> [finalize]}"
+  local hasta="${2:?uso: tramo <desde> <hasta> [finalize]}"
+  _lanza "$desde" "$hasta" "${3:-false}" ""
+}
+
+tramo_dry() {
+  echo "ENSAYO EN SECO: año $DRY_YEAR, municipios $DRY_INES (5 x 1 año, finalize=false)."
+  echo "Prueba la mecánica completa sin comprometer la serie. Deshacer: bash ops/backfill.sh dry-limpia"
+  _lanza "$DRY_YEAR" "$DRY_YEAR" "false" "$DRY_INES"
+}
+
+# Interno (lo lanza _lanza bajo nohup): corre un tramo síncrono y registra rc + fin.
 _run() {
-  local desde=$1 hasta=$2 fin=$3 log=$4
-  export SPRING_APPLICATION_JSON="{\"guaita.backfill.run\":true,\"guaita.backfill.from\":$desde,\"guaita.backfill.to\":$hasta,\"guaita.backfill.finalize\":$fin,\"guaita.backfill.report-path\":\"/out/fwi-backfill.md\"}"
+  local desde=$1 hasta=$2 fin=$3 log=$4 ines=${5:-}
+  export SPRING_APPLICATION_JSON="{\"guaita.backfill.run\":true,\"guaita.backfill.from\":$desde,\"guaita.backfill.to\":$hasta,\"guaita.backfill.finalize\":$fin,\"guaita.backfill.ine-codes\":\"$ines\",\"guaita.backfill.report-path\":\"/out/fwi-backfill.md\"}"
   local rc=0
   "${COMPOSE[@]}" run --rm --name "$CONTAINER" \
     -e SPRING_APPLICATION_JSON \
@@ -93,6 +111,22 @@ _run() {
   echo "$rc" >"$RC_FILE"
   date +%s >"$STAMP_FILE"
   return "$rc"
+}
+
+# Deshace el ensayo: borra FWI y meteo de los 5 municipios para el año del ensayo.
+dry_limpia() {
+  local u d
+  u="$("${COMPOSE[@]}" exec -T db printenv POSTGRES_USER | tr -d '\r\n')"
+  d="$("${COMPOSE[@]}" exec -T db printenv POSTGRES_DB | tr -d '\r\n')"
+  local ines_sql
+  ines_sql="'$(echo "$DRY_INES" | sed "s/,/','/g")'"
+  echo "borrando FWI y meteo del ensayo ($DRY_INES, año $DRY_YEAR)..."
+  "${COMPOSE[@]}" exec -T db psql -U "$u" -d "$d" -v ON_ERROR_STOP=1 -c "
+    delete from fwi_municipio
+      where ine_code in ($ines_sql) and extract(year from fecha) = $DRY_YEAR;
+    delete from meteo_municipio
+      where ine_code in ($ines_sql) and extract(year from fecha) = $DRY_YEAR;"
+  echo "limpio."
 }
 
 espera() {
@@ -112,6 +146,12 @@ case "${1:-}" in
     shift
     tramo "$@"
     ;;
+  tramo-dry)
+    tramo_dry
+    ;;
+  dry-limpia)
+    dry_limpia
+    ;;
   espera)
     espera
     ;;
@@ -120,7 +160,7 @@ case "${1:-}" in
     _run "$@"
     ;;
   *)
-    echo "uso: bash ops/backfill.sh {tramo <desde> <hasta> [finalize] | espera}" >&2
+    echo "uso: bash ops/backfill.sh {tramo <desde> <hasta> [finalize] | tramo-dry | dry-limpia | espera}" >&2
     exit 2
     ;;
 esac

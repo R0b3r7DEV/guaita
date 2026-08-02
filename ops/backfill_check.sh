@@ -31,13 +31,15 @@ if [ "$total" = "0" ]; then
   exit 1
 fi
 
-# 1) Cobertura rectangular: 135 municipios, todos con el MISMO nº de días.
+# 1) Cobertura rectangular: N municipios, todos con el MISMO nº de días.
+# Esperados = los de la provincia (135), salvo override para el ensayo en seco
+# (GUAITA_BACKFILL_EXPECT_MUNIS=5).
 munis="$(scalar "select count(distinct ine_code) from meteo_municipio")"
-provincia="$(scalar "select count(*) from municipio")"
-if [ "$munis" = "$provincia" ]; then
-  ok "municipios con dato: $munis/$provincia"
+esperados="${GUAITA_BACKFILL_EXPECT_MUNIS:-$(scalar "select count(*) from municipio")}"
+if [ "$munis" = "$esperados" ]; then
+  ok "municipios con dato: $munis/$esperados"
 else
-  mal "municipios con dato: $munis/$provincia (faltan municipios)"
+  mal "municipios con dato: $munis/$esperados (faltan municipios)"
 fi
 
 ndist="$(scalar "select count(distinct n) from (select count(*) n from meteo_municipio group by ine_code) t")"

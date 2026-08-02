@@ -106,6 +106,23 @@ bash ops/backfill.sh tramo 2025 2026 true
 bash ops/backfill.sh espera
 ```
 
+**Ensayo en seco (antes del T1 real).** Valida la mecánica completa —guardas,
+petición real, parseo, persistencia, `backfill-check`— sobre **1 año × 5
+municipios**, sin comprometer la serie y trivial de deshacer:
+
+```bash
+bash ops/backfill.sh tramo-dry            # 5 municipios de control × año 2020
+bash ops/backfill.sh tramo-dry            # (a la vez: debe RECHAZARSE por concurrencia)
+bash ops/backfill.sh espera
+GUAITA_BACKFILL_EXPECT_MUNIS=5 make backfill-check   # espera 5 municipios, no 135
+docker stats guaita-backfill              # (durante el tramo) pico de memoria
+bash ops/backfill.sh dry-limpia           # borra las filas del ensayo antes del T1
+```
+
+El log del ensayo trae `Open-Meteo 200: N KB`: multiplica por ~27 (135/5) para
+estimar el payload de un año-petición real. Con eso mides el tamaño y el pico de
+memoria en vez de estimarlos.
+
 Progreso, dos vías:
 
 ```bash
