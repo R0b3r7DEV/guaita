@@ -38,14 +38,17 @@ services:
     ports:
       - "${API_PORT_HOST:-8080}:8080"
     restart: unless-stopped
-    # 1 GB porque el backfill parsea la respuesta horaria de un año para 135
-    # localizaciones (~43 MB de JSON) en memoria; con MaxRAMPercentage=75 el
-    # heap queda ~768 MB, holgado para ese pico. 1 CPU.
+    # El backfill parsea en memoria la respuesta horaria de un año para 135
+    # localizaciones (JSON de decenas de MB, estimado ~50-70 MB; Jackson lo
+    # materializa entero -> pico de heap ~250-300 MB). 1 GB de contenedor, 1 CPU.
     mem_limit: ${API_MEM_LIMIT:-1g}
     cpus: ${API_CPUS:-1.0}
     environment:
-      # El heap se dimensiona respecto al límite del contenedor, no al host.
-      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
+      # -Xmx EXPLÍCITO por debajo del mem_limit: sin él la JVM puede no respetar
+      # el cgroup y el OOM-killer mata el contenedor sin traza. Deja ~360 MB para
+      # no-heap (metaspace, hilos, code cache). ExitOnOutOfMemoryError: si aun así
+      # revienta, sale limpio (el tramo aborta y es reanudable), no queda a medias.
+      JAVA_TOOL_OPTIONS: "-Xmx${API_XMX:-640m} -XX:+ExitOnOutOfMemoryError"
       # Guardia de disco: vigila el disco del HOST (bind read-only de abajo),
       # no el efímero del contenedor. Umbral configurable.
       GUAITA_BACKFILL_DISK_GUARD_PATH: /hostdisk

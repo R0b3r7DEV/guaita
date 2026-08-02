@@ -16,6 +16,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.StringJoiner;
 import java.util.concurrent.ThreadLocalRandom;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Cliente HTTP de Open-Meteo {@code /v1/archive} (ADR-07), encima del mapper puro. Fija en la
@@ -25,6 +27,8 @@ import java.util.concurrent.ThreadLocalRandom;
  * jitter en fallos de red, 5xx y 429; los 4xx (salvo 429) NO se reintentan.
  */
 public final class OpenMeteoClient {
+
+  private static final Logger log = LoggerFactory.getLogger(OpenMeteoClient.class);
 
   private static final String HOURLY =
       "temperature_2m,relative_humidity_2m,wind_speed_10m,precipitation";
@@ -176,6 +180,8 @@ public final class OpenMeteoClient {
         HttpResponse<String> res = http.send(req, HttpResponse.BodyHandlers.ofString());
         int sc = res.statusCode();
         if (sc == 200) {
+          // Tamaño del payload: mide el pico de memoria del parseo (riesgo de OOM en el backfill).
+          log.info("Open-Meteo 200: {} KB", res.body().length() / 1024);
           return res.body();
         }
         if (sc != 429 && sc < 500) {

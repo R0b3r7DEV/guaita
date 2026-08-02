@@ -86,20 +86,24 @@ contra el volumen persistente, con una **guardia de disco** que aborta limpio
 defecto), y que se niega a arrancar si el tramo no cabe con margen.
 
 Los **tramos intermedios** solo ingieren meteo (`finalize` ausente); el **tramo
-final** (`"guaita.backfill.finalize":true`) calcula el FWI de los 135 sobre la
-serie completa, verifica que la meteo está completa (aborta diciendo qué falta),
-corre las aserciones de completitud y regenera el informe.
+final** (`finalize`) calcula el FWI de los 135 sobre la serie completa, verifica
+que la meteo está completa (aborta diciendo qué falta), corre las aserciones de
+completitud y regenera el informe.
+
+El lanzamiento va por `ops/backfill.sh`, con **salvaguardas**: un solo tramo a la
+vez (rechaza lanzar otro con uno vivo), `espera` bloqueante, e intervalo mínimo
+entre tramos (60 min; dos seguidos darían 429 de Open-Meteo). NO lances tramos a
+mano en paralelo.
 
 ```bash
-# Tramo intermedio (ej. 2005-2008), sobreviviendo a la desconexión SSH:
-nohup docker compose -f docker-compose.yml -f docker-compose.vps.yml \
-  run --rm --name guaita-backfill \
-  -e SPRING_APPLICATION_JSON='{"guaita.backfill.run":true,"guaita.backfill.from":2005,"guaita.backfill.to":2008,"guaita.backfill.report-path":"/out/fwi-backfill.md"}' \
-  -v "$(pwd)/etl/reports:/out" \
-  api > "etl/reports/backfill-$(date +%Y%m%d-%H%M).log" 2>&1 &
+# Un tramo, desatendido (sobrevive a la desconexión SSH):
+bash ops/backfill.sh tramo 2005 2008         # intermedio (solo meteo)
+bash ops/backfill.sh espera                  # BLOQUEA hasta que acabe + veredicto
+make backfill-check                          # valida lo ingerido (ver abajo)
 
-# Tramo FINAL (añade "finalize":true): calcula FWI + aserciones + informe.
-#   ...,"guaita.backfill.to":2026,"guaita.backfill.finalize":true,...
+# ...tras los tramos intermedios, el FINAL calcula FWI + aserciones + informe:
+bash ops/backfill.sh tramo 2025 2026 true
+bash ops/backfill.sh espera
 ```
 
 Progreso, dos vías:
@@ -114,6 +118,13 @@ docker compose -f docker-compose.yml -f docker-compose.vps.yml exec db \
   psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
   "select count(distinct ine_code) municipios, min(fecha), max(fecha), count(*) filas \
    from meteo_municipio;"
+```
+
+Memoria durante el tramo (riesgo de OOM al parsear el JSON horario; el heap va
+capado con `-Xmx`, `ExitOnOutOfMemoryError` sale limpio si aun así revienta):
+
+```bash
+docker stats guaita-backfill        # en vivo; Ctrl-C para salir (--no-stream = una foto)
 ```
 
 Reanudar tras un aborto/parada = relanzar el mismo tramo: es idempotente y
