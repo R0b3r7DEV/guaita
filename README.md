@@ -168,6 +168,28 @@ no NULL, rangos físicos (temp −20..50, HR 0..100, viento ≥ 0), estacionalid
 altitud, delta y T/HR de un día de verano —Vistabella y Villahermosa con
 corrección apreciable, los costeros casi nula—.
 
+### Operación diaria (tras el backfill)
+
+Terminado el backfill, un job `@Scheduled` (06:30 `Europe/Madrid`) ingiere cada
+día la meteo nueva y recalcula el FWI. **Recupera huecos**: no procesa "hoy",
+sino desde la última fecha con dato hasta el corte del archivo (~D-5); si el
+servidor estuvo caído una semana, la siguiente pasada rellena los siete días. Si
+Open-Meteo falla o los datos no validan, **no escribe nada** (ni ceros) y el hueco
+lo recupera la pasada siguiente.
+
+Está **apagado por defecto**; actívalo SOLO cuando el histórico esté completo (si
+no, generaría cadenas parciales):
+
+```bash
+# en .env:  GUAITA_SCHEDULER_ENABLED=true   (luego reinicia la api)
+docker compose -f docker-compose.yml -f docker-compose.vps.yml up -d --wait api
+
+# Métrica de retraso respecto a D-5 (si crece, algo va mal aunque el job no falle):
+docker compose -f docker-compose.yml -f docker-compose.vps.yml exec db \
+  psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc \
+  "select (current_date - 5) - max(fecha) from meteo_municipio;"
+```
+
 ## Documentación
 
 | Doc | Contenido |

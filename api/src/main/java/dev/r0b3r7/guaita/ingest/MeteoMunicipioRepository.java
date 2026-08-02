@@ -121,6 +121,22 @@ public class MeteoMunicipioRepository {
         corte);
   }
 
+  /**
+   * Última fecha con dato del municipio MÁS RETRASADO (mínimo de los máximos por municipio), o
+   * {@code null} si no hay meteo. El job diario ingiere desde aquí + 1 hasta el corte: así una
+   * pasada tras días de caída recupera todos los huecos, no solo "hoy".
+   */
+  public LocalDate ultimaFechaMinima() {
+    return jdbc.queryForObject(
+        "select min(u) from (select max(fecha) u from meteo_municipio group by ine_code) t",
+        LocalDate.class);
+  }
+
+  /** Última fecha con dato en toda la tabla, o {@code null} si vacía (para el retraso vs corte). */
+  public LocalDate ultimaFechaMaxima() {
+    return jdbc.queryForObject("select max(fecha) from meteo_municipio", LocalDate.class);
+  }
+
   /** Nº de municipios cuyo punto de consulta NO cae dentro de su término (debe ser 0). */
   public int municipiosConPuntoFuera() {
     Integer n = jdbc.queryForObject(FUERA_SQL, Integer.class);
