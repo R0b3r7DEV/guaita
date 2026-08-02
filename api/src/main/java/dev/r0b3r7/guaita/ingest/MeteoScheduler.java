@@ -44,7 +44,8 @@ public class MeteoScheduler {
           r.fwiActualizado(),
           r.diasRetraso());
       if (r.diasRetraso() > 0) {
-        log.warn("retraso de {} d respecto al corte del archivo; vigilar si crece", r.diasRetraso());
+        log.warn(
+            "retraso de {} d respecto al corte del archivo; vigilar si crece", r.diasRetraso());
       }
     } catch (RuntimeException e) {
       // Fallo de fuente/validación: no se ha escrito nada. La siguiente pasada recupera el hueco.

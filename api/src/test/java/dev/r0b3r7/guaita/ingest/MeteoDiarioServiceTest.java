@@ -19,12 +19,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-/**
- * La pasada diaria con Open-Meteo mockeado: recuperación de huecos (el FWI recursivo debe encadenar
- * tras un corte) e idempotencia (dos pasadas seguidas no cambian nada). Aislamiento duro:
- * {@code puntosDeConsulta} hace INNER JOIN con topografia, así que dejando SOLO el municipio de test
- * con topografia, la pasada procesa únicamente ese, sin depender de lo que dejen otros tests.
- */
+/** Pasada diaria (cliente mockeado): recuperación de huecos e idempotencia. */
 @Import(TestcontainersConfiguration.class)
 @SpringBootTest
 class MeteoDiarioServiceTest {

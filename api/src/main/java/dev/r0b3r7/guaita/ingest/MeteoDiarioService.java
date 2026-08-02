@@ -10,16 +10,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 /**
- * Pasada de ingesta diaria de meteo + FWI (operación, tras el backfill histórico). La dispara {@link
- * MeteoScheduler}, pero la lógica vive aquí para poder probarla sin el reloj.
+ * Pasada de ingesta diaria de meteo + FWI (operación, tras el backfill histórico). La dispara
+ * {@link MeteoScheduler}, pero la lógica vive aquí para poder probarla sin el reloj.
  *
  * <p><b>Recuperación de huecos</b>: NO procesa "hoy". Ingiere desde la última fecha del municipio
  * más retrasado + 1 hasta el corte del archivo (~D-5); si el servidor estuvo caído una semana,
  * recupera los siete días. Como el FWI es recursivo, un hueco no recuperado rompería la cadena para
- * siempre. <b>Fallo de fuente</b>: si Open-Meteo cae o el lote no pasa validación, la petición lanza
- * ANTES de escribir nada — no se persisten filas ni ceros; el hueco queda y la pasada siguiente lo
- * recupera. Un FWI en cero sin explicación es peligroso en esta aplicación. Idempotente: una segunda
- * pasada seguida no encuentra nada que ingerir.
+ * siempre. <b>Fallo de fuente</b>: si Open-Meteo cae o el lote no pasa validación, la petición
+ * lanza ANTES de escribir nada — no se persisten filas ni ceros; el hueco queda y la pasada
+ * siguiente lo recupera. Un FWI en cero sin explicación es peligroso en esta aplicación.
+ * Idempotente: una segunda pasada seguida no encuentra nada que ingerir.
  */
 @Service
 public class MeteoDiarioService {
@@ -85,7 +85,8 @@ public class MeteoDiarioService {
     return new Resultado(desde, corte, puntos.size(), filas.size(), fwi, retraso);
   }
 
-  private static List<PuntoMeteo> conElevaciones(List<PuntoMeteo> base, Map<String, Double> nativas) {
+  private static List<PuntoMeteo> conElevaciones(
+      List<PuntoMeteo> base, Map<String, Double> nativas) {
     List<PuntoMeteo> puntos = new ArrayList<>(base.size());
     for (PuntoMeteo p : base) {
       puntos.add(
