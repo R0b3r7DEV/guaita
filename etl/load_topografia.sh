@@ -33,7 +33,10 @@ if [[ "$(tif_count)" -ne 23 ]]; then
   echo "==> Descargando MDT25 del Release (data/mdt25-v2)…"
   curl -fsSL -o "$TARBALL" "$RELEASE_URL" \
     || { echo "ERROR: no pude bajar el tar.gz del Release. Publícalo con make mdt-fetch + gh release. NO se usa el CNIG como fallback." >&2; exit 1; }
-  tar -xzf "$TARBALL" -C "$MDT"
+  # --no-same-owner: el tar se empaquetó en otra máquina (uid/gid ajenos). Sin esto, al extraer
+  # como root DENTRO de un contenedor rootless, tar intenta chown a un uid fuera del rango de
+  # subuids y falla ("Cannot change ownership ... Invalid argument"). Con root real es inocuo.
+  tar --no-same-owner -xzf "$TARBALL" -C "$MDT"
 fi
 if [[ ! -f "$MDT/SHA256SUMS" ]]; then
   echo "ERROR: falta $MDT/SHA256SUMS (¿tar.gz incompleto?)." >&2; exit 1
