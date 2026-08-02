@@ -10,7 +10,7 @@
     "lint": "tsc -b --noEmit"
   },
   "dependencies": {
-    "maplibre-gl": "^5.24.0",
+    "maplibre-gl": "^6.0.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "zod": "^4.4.3"
