@@ -57,24 +57,37 @@ ruidosamente en el seed.
 
 ---
 
-## Fase 2 · Meteorología y FWI (semanas 4–5)
+## Fase 2 · Meteorología y FWI (semanas 4–5) — ✅ COMPLETADA (salvo la ejecución del backfill)
 
 - [x] Migración V7: tablas `meteo_municipio` y `fwi_municipio`.
 - [x] `FwiCalculator` desde Van Wagner & Pickett 1985 (ecuaciones exactas).
 - [x] **Tests con vectores de referencia**: reproduce la tabla de ejemplo de la
       publicación (49 días) con `max|diff| < 0,1` en los seis códigos. (Contraste
       cffdrs en R: cobertura pendiente, sin R en el entorno; ver docs/04.)
-- [ ] **Fuente única Open-Meteo ERA5-Seamless** (ADR-07), para histórico Y
-      operación. AEMET NO es entrada: pasa a contraste externo en Fase 4.
-- [ ] Asignación por municipio desde la rejilla de reanálisis (celda/IDW de las
-      celdas vecinas) + corrección altitudinal de temperatura. Rellena
-      `interpolado`/`n_estaciones` (calidad del dato).
-- [ ] Backfill del histórico (job manual en Actions, como `seed.yml`; reanudable).
-- [ ] Job `@Scheduled` diario: calcula el último día disponible (~D-5) y lo
-      etiqueta con su fecha. Zona horaria fijada explícitamente, no heredada.
+- [x] **Fuente única Open-Meteo ERA5-Seamless** (ADR-07), para histórico Y
+      operación. **AEMET NO es entrada de Fase 2: se mueve a Fase 4 como
+      contraste externo** (ADR-07). El cliente AEMET no se implementa aquí.
+- [x] Asignación por municipio desde la rejilla de reanálisis + corrección
+      altitudinal **delegada en Open-Meteo** (`elevation=altitud_media_m`;
+      verificado empíricamente que ya downscalea T y HR, docs/04). La calidad del
+      dato pasó de `interpolado`/`n_estaciones` a `elevacion_celda_m` /
+      `delta_altitud_m` (migración V8).
+- [x] Backfill del histórico: **código** reanudable e idempotente, cadena FWI
+      continua, flag `finalize`, aserciones de completitud e informe. Corre en el
+      **VPS** contra BD persistente (la de Actions es efímera, docs/01), con
+      guardia de disco y salvaguardas de concurrencia/intervalo (`ops/backfill.sh`).
+- [x] Job `@Scheduled` diario: ingiere hasta el corte del archivo (~D-5),
+      recupera huecos (no procesa "hoy"), zona horaria `Europe/Madrid` explícita,
+      no escribe ante fallo de fuente. Apagado hasta que el backfill esté completo.
 
-**Criterio:** `fwi_municipio` tiene una serie completa de 20 años para los 135
-municipios y el job diario añade una fila nueva sin intervención.
+**Paso operativo pendiente (no de desarrollo):** ejecutar el backfill provincial
+de los 135 × 21 años en el VPS, por tramos (README, "Despliegue en VPS"), y
+encender el job diario. Es una tirada de horas contra Open-Meteo, no código.
+
+**Criterio:** `fwi_municipio` tendrá una serie completa de ~21 años para los 135
+municipios y el job diario añadirá una fila nueva sin intervención. Validado
+provisionalmente en un subconjunto (eventos+control): los 10 incendios reales
+caen en la cola alta de su ventana ±15 días (ver `etl/reports/fwi-backfill.md`).
 
 **Esta es la fase técnicamente más exigente.** Si algo se atasca, es aquí.
 
