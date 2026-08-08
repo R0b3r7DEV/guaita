@@ -21,7 +21,13 @@ REPORTS_DIR="etl/reports"
 STAMP_FILE="$REPORTS_DIR/.last-tramo-end"
 RC_FILE="$REPORTS_DIR/.last-tramo-rc"
 MIN_INTERVAL="${GUAITA_BACKFILL_MIN_INTERVAL_SECS:-3600}"
+MEM_WARN_MIB="${GUAITA_MEM_WARN_MIB:-1150}"
 COMPOSE=(docker compose -f docker-compose.yml -f docker-compose.vps.yml)
+
+# Docker rootless: el CLI usa el contexto persistido, pero fijamos XDG_RUNTIME_DIR por si el
+# script se relanza (nohup) en un entorno sin él.
+: "${XDG_RUNTIME_DIR:=/run/user/$(id -u)}"
+export XDG_RUNTIME_DIR
 
 # Ensayo en seco: 5 municipios (5 de los 6 de control: 3 de interior de montaña
 # con corrección altitudinal apreciable + 2 costeros con delta ~0) y un año.
@@ -85,6 +91,9 @@ _lanza() {
   # Así el JSON no viaja entre comillas anidadas y el fin/rc se registran siempre.
   nohup bash "$0" _run "$desde" "$hasta" "$fin" "$log" "$ines" >/dev/null 2>&1 &
   echo "PID $!. Sigue con:  bash ops/backfill.sh espera   (o  tail -f $log)"
+  # Monitor de memoria automático en segundo plano (espera activa + pico a fichero + aviso).
+  nohup bash "$0" monitor >/dev/null 2>&1 &
+  echo "monitor de memoria lanzado en segundo plano (etl/reports/mem-*.log)"
 }
 
 tramo() {
@@ -129,6 +138,42 @@ dry_limpia() {
   echo "limpio."
 }
 
+# MiB de una cadena tipo "725.3MiB" o "1.2GiB" (primer campo de docker stats MemUsage).
+_a_mib() {
+  awk '{u=$1; if (u ~ /GiB/){gsub(/GiB/,"",u); print u*1024} else {gsub(/[A-Za-z]/,"",u); print u+0}}'
+}
+
+# Vigila la memoria del contenedor del tramo: ESPERA ACTIVA a que exista (arregla la carrera de
+# comprobar antes de tiempo), muestrea cada 4 s durante toda su vida, registra cada muestra y el
+# PICO en un fichero, y avisa si una muestra supera el umbral. Pensada para lanzarse en segundo
+# plano junto al tramo, sin intervención. Umbral: GUAITA_MEM_WARN_MIB (1150 por defecto).
+monitor() {
+  local memlog="$REPORTS_DIR/mem-$(date +%Y%m%d-%H%M%S).log"
+  echo "monitor de memoria -> $memlog (aviso si supera ${MEM_WARN_MIB} MiB)"
+  local i max=0 val
+  for i in $(seq 1 60); do # espera hasta ~4 min a que arranque el contenedor
+    hay_tramo && break
+    sleep 4
+  done
+  if ! hay_tramo; then
+    echo "monitor: el contenedor no apareció; nada que medir" | tee -a "$memlog"
+    return 0
+  fi
+  while hay_tramo; do
+    val=$(docker stats --no-stream --format '{{.MemUsage}}' "$CONTAINER" 2>/dev/null | _a_mib)
+    if [ -n "$val" ]; then
+      max=$(awk -v a="$max" -v b="$val" 'BEGIN{print (b>a)?b:a}')
+      printf '%s  %s MiB\n' "$(date +%T)" "$val" >>"$memlog"
+      if awk -v v="$val" -v t="$MEM_WARN_MIB" 'BEGIN{exit !(v>t)}'; then
+        printf '%s  WARN: %s MiB > umbral %s MiB\n' "$(date +%T)" "$val" "$MEM_WARN_MIB" >>"$memlog"
+      fi
+    fi
+    sleep 4
+  done
+  echo "PICO_MiB=$max" >>"$memlog"
+  echo "monitor: pico observado ${max} MiB (detalle en $memlog)"
+}
+
 espera() {
   if ! hay_tramo; then
     echo "no hay ningún tramo corriendo."
@@ -155,12 +200,15 @@ case "${1:-}" in
   espera)
     espera
     ;;
+  monitor)
+    monitor
+    ;;
   _run)
     shift
     _run "$@"
     ;;
   *)
-    echo "uso: bash ops/backfill.sh {tramo <desde> <hasta> [finalize] | tramo-dry | dry-limpia | espera}" >&2
+    echo "uso: bash ops/backfill.sh {tramo <desde> <hasta> [finalize] | tramo-dry | dry-limpia | espera | monitor}" >&2
     exit 2
     ;;
 esac
