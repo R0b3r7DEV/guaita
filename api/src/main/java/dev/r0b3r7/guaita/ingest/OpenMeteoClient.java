@@ -187,7 +187,12 @@ public final class OpenMeteoClient {
         if (sc != 429 && sc < 500) {
           throw new IllegalStateException("Open-Meteo respondió " + sc + ": " + brief(res.body()));
         }
-        last = new IllegalStateException("Open-Meteo " + sc + " (reintentable)");
+        // 429/5xx reintentables: LOGUEA la razón del cuerpo (Open-Meteo no manda cabeceras de
+        // rate-limit, pero el cuerpo dice qué límite se excedió: "Daily/Hourly/Minutely ...").
+        // Instrumentación: saber por qué, no suponerlo.
+        String motivo = brief(res.body());
+        log.warn("Open-Meteo {} (reintentable): {}", sc, motivo);
+        last = new IllegalStateException("Open-Meteo " + sc + " (reintentable): " + motivo);
       } catch (IOException e) {
         last = new IllegalStateException("fallo de red a Open-Meteo", e);
       } catch (InterruptedException e) {

@@ -22,6 +22,10 @@ STAMP_FILE="$REPORTS_DIR/.last-tramo-end"
 RC_FILE="$REPORTS_DIR/.last-tramo-rc"
 MIN_INTERVAL="${GUAITA_BACKFILL_MIN_INTERVAL_SECS:-3600}"
 MEM_WARN_MIB="${GUAITA_MEM_WARN_MIB:-1150}"
+# Presupuesto DIARIO de peticiones-año a Open-Meteo (límite por IP, reset 00:00 UTC; sin cabeceras
+# de consumo, así que lo contamos nosotros). Un 429 así es imposible por construcción, no por
+# disciplina. Medido: ~7 peticiones-año/día tumbaron la IP; 6 deja margen.
+DAILY_BUDGET="${GUAITA_DAILY_BUDGET:-6}"
 COMPOSE=(docker compose -f docker-compose.yml -f docker-compose.vps.yml)
 
 # Docker rootless: el CLI usa el contexto persistido, pero fijamos XDG_RUNTIME_DIR por si el
@@ -84,6 +88,21 @@ _lanza() {
       }
     fi
   fi
+
+  # 3. Presupuesto diario de Open-Meteo (por IP, reset 00:00 UTC). Reserva ANTES de lanzar
+  #    (pesimista: cuenta el tramo entero aunque un 429 lo corte a medias, porque igual consumió).
+  local budget_file today span
+  budget_file="$REPORTS_DIR/.budget-$(date -u +%F)"
+  today=$(cat "$budget_file" 2>/dev/null || echo 0)
+  span=$((hasta - desde + 1))
+  if [ $((today + span)) -gt "$DAILY_BUDGET" ]; then
+    echo "ABORTA: presupuesto diario de Open-Meteo. Hoy (UTC $(date -u +%F)) van $today peticiones-año;" >&2
+    echo "este tramo pide $span y el techo es $DAILY_BUDGET. El límite DIARIO resetea a las 00:00 UTC:" >&2
+    echo "reintenta mañana, o sube GUAITA_DAILY_BUDGET si mides que hay margen." >&2
+    exit 1
+  fi
+  echo $((today + span)) >"$budget_file"
+  echo "presupuesto: hoy van $((today + span))/$DAILY_BUDGET peticiones-año (UTC $(date -u +%F))"
 
   local log="$REPORTS_DIR/backfill-$desde-$hasta-$(date +%Y%m%d-%H%M).log"
   echo "lanzando tramo $desde-$hasta (finalize=$fin, ine_codes='${ines:-todos}') -> $log"
