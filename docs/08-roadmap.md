@@ -57,7 +57,7 @@ ruidosamente en el seed.
 
 ---
 
-## Fase 2 · Meteorología y FWI (semanas 4–5) — ✅ COMPLETADA (salvo la ejecución del backfill)
+## Fase 2 · Meteorología y FWI (semanas 4–5) — ✅ COMPLETADA (ejecución incluida)
 
 - [x] Migración V7: tablas `meteo_municipio` y `fwi_municipio`.
 - [x] `FwiCalculator` desde Van Wagner & Pickett 1985 (ecuaciones exactas).
@@ -78,16 +78,19 @@ ruidosamente en el seed.
       guardia de disco y salvaguardas de concurrencia/intervalo (`ops/backfill.sh`).
 - [x] Job `@Scheduled` diario: ingiere hasta el corte del archivo (~D-5),
       recupera huecos (no procesa "hoy"), zona horaria `Europe/Madrid` explícita,
-      no escribe ante fallo de fuente. Apagado hasta que el backfill esté completo.
+      no escribe ante fallo de fuente. **ENCENDIDO** (`GUAITA_SCHEDULER_ENABLED=true`)
+      tras completar el backfill.
+- [x] **Backfill provincial EJECUTADO** en el VPS: 6 tramos de 3 años a razón de
+      1/día (límite diario de Open-Meteo, ver docs/02), ~5-6 días naturales. Serie
+      FWI **135 municipios × 2005-01-01 → 2026-08-13 = 1.065.825 filas**,
+      rectangular, aserciones verdes.
 
-**Paso operativo pendiente (no de desarrollo):** ejecutar el backfill provincial
-de los 135 × 21 años en el VPS, por tramos (README, "Despliegue en VPS"), y
-encender el job diario. Es una tirada de horas contra Open-Meteo, no código.
-
-**Criterio:** `fwi_municipio` tendrá una serie completa de ~21 años para los 135
-municipios y el job diario añadirá una fila nueva sin intervención. Validado
-provisionalmente en un subconjunto (eventos+control): los 10 incendios reales
-caen en la cola alta de su ventana ±15 días (ver `etl/reports/fwi-backfill.md`).
+**Criterio — CUMPLIDO.** `fwi_municipio` tiene la serie completa de los 135
+municipios y el job diario añade la fila nueva sin intervención. Validación **a
+escala provincial** (`etl/reports/fwi-backfill.md`): los 10 incendios reales caen
+en la cola alta de su ventana ±15 días (P92.9–P100; Villanueva de Viver marzo-2023
+P95.5); el gradiente de julio por comarca refleja altitud/continentalidad (valles
+interiores cálidos y costa arriba, montaña del Maestrat/Ports abajo).
 
 **Esta es la fase técnicamente más exigente.** Si algo se atasca, es aquí.
 

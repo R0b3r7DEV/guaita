@@ -97,9 +97,25 @@ ERA5-Land no trae viento a 10 m). Cobertura 1940→. Endpoint `/v1/archive`.
   el archivo o se reabre la discontinuidad (ADR-07).
 - **Zona horaria**: la API horaria devuelve **UTC** por defecto (`timezone=GMT`).
   Se indexa la hora 12 UTC sin pasar `timezone`. La conversión, en un solo sitio.
-- **Rate limit**: respetuoso, backoff exponencial, `User-Agent` identificable.
-  135 municipios/día es trivial; el backfill (un rango largo por punto en una
-  petición) también cabe de sobra.
+- **Rate limit / presupuesto (MEDIDO en el backfill; NO está en su documentación).**
+  La **operación diaria** (135 municipios × 1 día) es trivial (~1 petición pequeña).
+  El **backfill histórico** no: cada petición de un año horario para 135 municipios
+  pesa **~41 MB**, y hay tres límites **por IP** que conviene conocer si algún día
+  hay que rehacer el histórico:
+  - **DIARIO (el que manda).** El cuerpo del 429 lo dice literalmente: *"Daily API
+    request limit exceeded. Please try again tomorrow."* Resetea a **00:00 UTC**.
+    **~7 de esas peticiones-año agotan el día** (medido: la 8ª dio 429).
+  - **POR MINUTO.** Una sola petición de 41 MB lo roza (*"Minutely API request
+    limit exceeded, try again in one minute"*); se absorbe con el backoff, sin
+    perder dato.
+  - **Sin cabeceras de rate-limit** (ni `Retry-After`): el único aviso es el texto
+    del cuerpo. Por eso el cliente **loguea el cuerpo del 429** y el orquestador
+    lleva un **contador local por día UTC** (`ops/backfill.sh`,
+    `GUAITA_DAILY_BUDGET=6`) que se niega a exceder → un 429 diario es imposible
+    por construcción, no por disciplina.
+  - **Punto dulce medido: 1 tramo de 3 años al día** (3 peticiones-año, ~5 min,
+    pico ~850 MiB con `-Xmx 768m`). El histórico completo (135 × 22 años) llevó
+    ~5-6 días naturales a ese ritmo. Backoff exponencial + `User-Agent` identificable.
 - Alternativas descartadas: **ERA5-Land solo** (sin viento); **CERRA** (5 km, gran
   resolución, pero acaba en jun-2021 → solo histórico → reabriría la
   discontinuidad); **ECMWF IFS** (9 km, tiempo real, pero desde 2017 y modelo

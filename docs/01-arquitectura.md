@@ -231,3 +231,22 @@ presupuesto diario fresco frente a la fuente externa, volumen que sobrevive a
 real. Actions queda para lo *sin estado*: build, tests, lint, smoke y el seed de
 geodato estático (idempotente y reconstruible). Regla general: **estado recursivo
 ⇒ BD persistente ⇒ VPS, no CI.**
+
+## Despliegue en Docker rootless — aislamiento y permisos
+
+En el VPS, GUAITA corre en un **Docker rootless** de un usuario dedicado (`guaita`,
+sin `sudo`), con su **propio daemon** separado del de sistema donde vive XPL0DAY:
+GUAITA no puede ver ni tocar los contenedores/volúmenes de producción — aislamiento
+por diseño, no por permisos. Dos lecciones que costaron tiempo:
+
+- **Cuenta `--disabled-password` + `UsePAM no` en sshd** bloquea el login por CLAVE,
+  no solo por contraseña (sshd rechaza cuentas "locked"). Se desbloquea dándole un
+  hash aleatorio (`usermod -p`), que no habilita login por contraseña pero deja de
+  estar "locked".
+- **Escritura de ficheros en un bind-mount:** el contenedor `api` corre como usuario
+  no-root (`USER guaita` en el Dockerfile, buena práctica). Bajo rootless ese uid
+  mapea a un *subuid* que **no es dueño** del directorio del host montado, así que el
+  finalize del backfill fallaba al escribir el informe (`AccessDeniedException`). Se
+  resuelve corriendo **ese contenedor** con `docker run --user 0:0`: bajo rootless el
+  uid 0 mapea al **usuario dueño del host** (no a root real), y escribe con permisos
+  normales. Evita el `chmod 777` del bind-mount.
