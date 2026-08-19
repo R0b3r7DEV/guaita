@@ -29,6 +29,9 @@ public class MeteoScheduler {
 
   public MeteoScheduler(MeteoDiarioService service) {
     this.service = service;
+    // El bean solo se crea si guaita.scheduler.enabled=true, así que este log confirma la
+    // activación y deja el cron + zona en el arranque para poder verificarlos.
+    log.info("scheduler de meteo ACTIVO: cron '{}', zona {}", CRON, ZONA);
   }
 
   @Scheduled(cron = CRON, zone = ZONA)
