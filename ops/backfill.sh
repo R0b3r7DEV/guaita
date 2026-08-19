@@ -108,8 +108,10 @@ _lanza() {
   # rootless su uid no es dueño de $REPORTS_DIR -> AccessDenied. El script corre como el dueño, así
   # que deja el dir escribible y retira un informe viejo de otro propietario para que lo cree limpio.
   if [ "$fin" = "true" ]; then
-    chmod 777 "$REPORTS_DIR" 2>/dev/null || true
-    rm -f "$REPORTS_DIR/fwi-backfill.md"
+    # El contenedor escribe el informe como --user 0:0 (rootless -> dueño del host, ver _run), así
+    # que NO hace falta aflojar permisos del dir. Solo se retira un informe viejo de otro
+    # propietario (ruta fija, dentro de nuestro dir) para que lo cree limpio.
+    [ -f "$REPORTS_DIR/fwi-backfill.md" ] && rm -f "$REPORTS_DIR/fwi-backfill.md"
   fi
 
   local log="$REPORTS_DIR/backfill-$desde-$hasta-$(date +%Y%m%d-%H%M).log"
@@ -140,7 +142,10 @@ _run() {
   local desde=$1 hasta=$2 fin=$3 log=$4 ines=${5:-}
   export SPRING_APPLICATION_JSON="{\"guaita.backfill.run\":true,\"guaita.backfill.from\":$desde,\"guaita.backfill.to\":$hasta,\"guaita.backfill.finalize\":$fin,\"guaita.backfill.ine-codes\":\"$ines\",\"guaita.backfill.report-path\":\"/out/fwi-backfill.md\"}"
   local rc=0
-  "${COMPOSE[@]}" run --rm --name "$CONTAINER" \
+  # --user 0:0: bajo Docker ROOTLESS el uid 0 del contenedor mapea al usuario DUEÑO del host
+  # (no a root real), de modo que el informe del finalize se escribe en el bind-mount con
+  # permisos normales, sin chmod 777. En rootful sería root; aquí es un usuario sin privilegios.
+  "${COMPOSE[@]}" run --rm --user 0:0 --name "$CONTAINER" \
     -e SPRING_APPLICATION_JSON \
     -v "$PWD/$REPORTS_DIR:/out" \
     api >"$log" 2>&1 || rc=$?
