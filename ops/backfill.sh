@@ -104,6 +104,14 @@ _lanza() {
   echo $((today + span)) >"$budget_file"
   echo "presupuesto: hoy van $((today + span))/$DAILY_BUDGET peticiones-año (UTC $(date -u +%F))"
 
+  # Finalize: el contenedor (rootless, usuario no-root) escribe el informe en el bind-mount. Bajo
+  # rootless su uid no es dueño de $REPORTS_DIR -> AccessDenied. El script corre como el dueño, así
+  # que deja el dir escribible y retira un informe viejo de otro propietario para que lo cree limpio.
+  if [ "$fin" = "true" ]; then
+    chmod 777 "$REPORTS_DIR" 2>/dev/null || true
+    rm -f "$REPORTS_DIR/fwi-backfill.md"
+  fi
+
   local log="$REPORTS_DIR/backfill-$desde-$hasta-$(date +%Y%m%d-%H%M).log"
   echo "lanzando tramo $desde-$hasta (finalize=$fin, ine_codes='${ines:-todos}') -> $log"
   # Trabajo desatendido: nos reinvocamos con el subcomando interno _run bajo nohup.
