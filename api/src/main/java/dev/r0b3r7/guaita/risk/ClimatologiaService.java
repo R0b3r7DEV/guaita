@@ -76,7 +76,9 @@ public class ClimatologiaService {
     Integer provincia = jdbc.queryForObject("select count(*) from municipio", Integer.class);
     Integer filas =
         jdbc.queryForObject(
-            "select count(*) from fwi_climatologia where version_modelo = ?", Integer.class, version);
+            "select count(*) from fwi_climatologia where version_modelo = ?",
+            Integer.class,
+            version);
     int esperado = (provincia == null ? 0 : provincia) * 366;
     if (filas == null || filas != esperado) {
       fallos.add(filas + " filas, esperaba " + esperado + " (municipios × 366)");
@@ -103,7 +105,9 @@ public class ClimatologiaService {
     return fallos;
   }
 
-  /** Percentil de un evento (municipio, fecha) por la nueva ruta, o {@code null} si falta el dato. */
+  /**
+   * Percentil de un evento (municipio, fecha) por la nueva ruta, o {@code null} si falta el dato.
+   */
   public Double percentilEvento(String ineCode, LocalDate fecha, String version) {
     Double fwi =
         jdbc.query(
