@@ -57,7 +57,10 @@ class ClimatologiaRunner implements ApplicationRunner {
     ModeloParams.Meteo m = params.meteo();
     log.info(
         "precálculo climatología {}: base {}..{}, ventana ±{} días",
-        v, m.baseDesde(), m.baseHasta(), m.ventanaDias());
+        v,
+        m.baseDesde(),
+        m.baseHasta(),
+        m.ventanaDias());
     int n = service.precomputar(v, m.ventanaDias(), m.baseDesde(), m.baseHasta());
     log.info("fwi_climatologia: {} filas insertadas", n);
 

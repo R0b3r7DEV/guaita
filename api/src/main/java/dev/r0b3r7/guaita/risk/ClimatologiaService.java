@@ -10,12 +10,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Precálculo y consulta de la climatología FWI congelada ({@code fwi_climatologia}, docs/04 §1). Los
- * breakpoints P0..P100 se calculan por municipio × día del año sobre la ventana ±15 días del periodo
- * base, con aritmética de día del año CIRCULAR (la ventana del 1-ene incluye finales de diciembre).
- * El borde del año y el 29-feb (doy 366, solo 5 bisiestos) quedan bien muestreados justamente porque
- * la referencia es una VENTANA de ±15 días, no el doy exacto: cada doy recibe ~30 días/año de sus
- * vecinos. Se ejecuta una vez por versión; el scheduler no la toca.
+ * Precálculo y consulta de la climatología FWI congelada ({@code fwi_climatologia}, docs/04 §1).
+ * Los breakpoints P0..P100 se calculan por municipio × día del año sobre la ventana ±15 días del
+ * periodo base, con aritmética de día del año CIRCULAR (la ventana del 1-ene incluye finales de
+ * diciembre). El borde del año y el 29-feb (doy 366, solo 5 bisiestos) quedan bien muestreados
+ * justamente porque la referencia es una VENTANA de ±15 días, no el doy exacto: cada doy recibe ~30
+ * días/año de sus vecinos. Se ejecuta una vez por versión; el scheduler no la toca.
  */
 @Service
 public class ClimatologiaService {
@@ -56,7 +56,16 @@ public class ClimatologiaService {
     for (String ine : munis) {
       total +=
           jdbc.update(
-              INSERT_UN_MUNICIPIO, ine, version, desde, hasta, -ventana, ventana, ine, desde, hasta);
+              INSERT_UN_MUNICIPIO,
+              ine,
+              version,
+              desde,
+              hasta,
+              -ventana,
+              ventana,
+              ine,
+              desde,
+              hasta);
     }
     return total;
   }
