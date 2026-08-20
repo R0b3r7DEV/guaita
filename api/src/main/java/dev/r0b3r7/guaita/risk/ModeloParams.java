@@ -7,8 +7,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * Parámetros del índice de peligro, cargados de {@code model-params.yml} (docs/04). Es la fuente de
- * verdad de la reproducibilidad: cambiar cualquier valor obliga a subir {@link #version} y recalcular
- * todo el histórico (docs/04 §5). Inmutable (record) para que nadie lo mute en caliente.
+ * verdad de la reproducibilidad: cambiar cualquier valor obliga a subir {@link #version} y
+ * recalcular todo el histórico (docs/04 §5). Inmutable (record) para que nadie lo mute en caliente.
  */
 @ConfigurationProperties(prefix = "guaita.modelo")
 public record ModeloParams(
