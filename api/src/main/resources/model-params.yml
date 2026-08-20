@@ -22,14 +22,26 @@ guaita:
       # `version`. El scheduler diario NO añade días nuevos a la referencia:
       # así el percentil de un día pasado nunca cambia (backtest reproducible).
       # Se recalcula SOLO al subir versión (que ya obliga a recalcular todo).
+      # El periodo cubre AÑOS NATURALES COMPLETOS (21 exactos): así todos los días
+      # del año tienen el mismo tamaño de muestra en la ventana ±15 (un corte a
+      # mitad de 2026 daría 22 primaveras y 21 veranos, asimetría gratuita). Los
+      # días de 2026 siguen en fwi_municipio y se EVALÚAN contra la referencia,
+      # simplemente no la DEFINEN.
       base-desde: "2005-01-01"
-      base-hasta: "2026-08-13"    # corte del backfill provincial
+      base-hasta: "2025-12-31"
 
     # --- comp_estructural: pesos de combustible Anderson (docs/04 §2.2) ---
     combustible:
-      # código Anderson -> peso de inflamabilidad 0..1. PESOS DE PARTIDA.
-      # 2..8 presentes en la cartografía PATFOR; 1,9..13 por si una revisión
-      # futura del PATFOR los incorpora.
+      # Código de modelo Anderson (1982) -> peso de inflamabilidad 0..1.
+      # VALORES DE PARTIDA, NO CALIBRADOS. Derivados de las características de
+      # comportamiento PUBLICADAS de cada modelo de Anderson: velocidad de
+      # propagación, longitud de llama y resistencia al control. El modelo 4 es
+      # el techo por imposibilidad de ataque directo; 7 y 10 puntúan alto por
+      # continuidad vertical (combustible escalera, que sube el fuego a copas);
+      # los pastizales propagan rápido pero se paran en discontinuidades, de ahí
+      # que no encabecen. La CALIBRACIÓN es Fase 4 (búsqueda en rejilla, docs/09)
+      # y OBLIGA a subir `version`. Modelos 2..8 presentes en la cartografía
+      # PATFOR; 1 y 9..13 van por si una revisión futura del PATFOR los incorpora.
       pesos:
         "4": 1.00    # matorral alto denso (~2 m) — techo, ataque directo inviable
         "13": 0.95   # restos pesados
