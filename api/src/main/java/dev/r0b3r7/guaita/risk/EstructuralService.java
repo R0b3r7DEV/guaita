@@ -97,7 +97,9 @@ public class EstructuralService {
       Map<String, Double> areaPorCodigo = new LinkedHashMap<>();
       jdbc.query(
           Q_PESO_POR_CODIGO,
-          rs -> areaPorCodigo.put(rs.getString("codigo_origen"), rs.getDouble("area")),
+          (java.sql.ResultSet rs) -> {
+            areaPorCodigo.put(rs.getString("codigo_origen"), rs.getDouble("area"));
+          },
           ine);
 
       double fPendiente = Estructural.fPendiente(p90);

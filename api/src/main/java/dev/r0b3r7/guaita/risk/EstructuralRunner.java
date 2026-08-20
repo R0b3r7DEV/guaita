@@ -74,7 +74,9 @@ class EstructuralRunner implements ApplicationRunner {
         "select m.nombre, round((e.frac_sin_combustible*100)::numeric,1) pct"
             + " from estructural_municipio e join municipio m using (ine_code)"
             + " order by e.frac_sin_combustible desc limit 3",
-        rs -> log.info("    {} -> {}%", rs.getString("nombre"), rs.getBigDecimal("pct")));
+        (java.sql.ResultSet rs) -> {
+          log.info("    {} -> {}%", rs.getString("nombre"), rs.getBigDecimal("pct"));
+        });
     log.info(
         "f_pendiente saturada a 1.0 en {} de 135 municipios",
         service.municipiosPendienteSaturada());
@@ -95,7 +97,7 @@ class EstructuralRunner implements ApplicationRunner {
             + " where e.ine_code in ("
             + in
             + ") order by m.nombre",
-        rs -> {
+        (java.sql.ResultSet rs) -> {
           double ff = rs.getDouble("ff");
           double co = rs.getDouble("co");
           double pm = rs.getDouble("pm");
