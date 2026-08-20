@@ -1,4 +1,9 @@
 spring:
+  # Parámetros del índice de peligro (docs/04). Fichero versionado aparte: gobierna
+  # la reproducibilidad y se estampa como version_modelo en cada cálculo (docs/04 §5).
+  config:
+    import: "classpath:model-params.yml"
+
   application:
     name: guaita-api
 

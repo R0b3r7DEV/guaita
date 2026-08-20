@@ -1,0 +1,82 @@
+# ============================================================================
+# model-params.yml — PARÁMETROS DEL ÍNDICE DE PELIGRO (docs/04).
+#
+# Fuente de verdad de la REPRODUCIBILIDAD. Cualquier cambio aquí obliga a:
+#   1) subir `version`,
+#   2) RECALCULAR TODO EL HISTÓRICO del índice antes de volver al backtest.
+# Comparar métricas entre versiones distintas NO significa nada (docs/04 §5).
+#
+# Los pesos de combustible y la curva f_tiempo son valores de PARTIDA
+# (Anderson/Rothermel, sin calibrar); se calibran en Fase 4 (docs/09) -> nueva
+# versión. No tocar sin bump de versión.
+# ============================================================================
+guaita:
+  modelo:
+    # Cadena estampada en cada fila de indice_peligro (docs/03).
+    version: "v1.0"
+
+    # --- comp_meteo: normalización por ventana estacional (docs/04 §1) ---
+    meteo:
+      ventana-dias: 15            # ±15 días del día del año
+      # La referencia climatológica se CONGELA a este periodo base y se ata a
+      # `version`. El scheduler diario NO añade días nuevos a la referencia:
+      # así el percentil de un día pasado nunca cambia (backtest reproducible).
+      # Se recalcula SOLO al subir versión (que ya obliga a recalcular todo).
+      base-desde: "2005-01-01"
+      base-hasta: "2026-08-13"    # corte del backfill provincial
+
+    # --- comp_estructural: pesos de combustible Anderson (docs/04 §2.2) ---
+    combustible:
+      # código Anderson -> peso de inflamabilidad 0..1. PESOS DE PARTIDA.
+      # 2..8 presentes en la cartografía PATFOR; 1,9..13 por si una revisión
+      # futura del PATFOR los incorpora.
+      pesos:
+        "4": 1.00    # matorral alto denso (~2 m) — techo, ataque directo inviable
+        "13": 0.95   # restos pesados
+        "7": 0.90    # matorral bajo arbolado — continuidad vertical (escalera)
+        "10": 0.85   # arbolado con sotobosque y restos
+        "12": 0.85   # restos medios
+        "6": 0.75    # matorral medio (0,6–1,2 m)
+        "3": 0.70    # pastizal alto (0,75 m)
+        "11": 0.65   # restos ligeros
+        "2": 0.60    # pasto bajo arbolado
+        "5": 0.55    # matorral bajo verde (0,6 m)
+        "1": 0.45    # pastizal corto
+        "9": 0.45    # hojarasca de frondosa/pinar
+        "8": 0.25    # hojarasca compacta cerrada
+      # Peso FIJO para la fracción forestal SIN dato de combustible (~5,2 %
+      # medido, overlay 94,8 %). NO la media provincial (sesgo circular: los
+      # municipios con más hueco tenderían a la media y perderían señal). Valor
+      # del modelo DOMINANTE del entorno (6 = matorral medio): ni el techo ni un
+      # pasto. La fracción sin dato por municipio se guarda como calidadDato.
+      peso-defecto: 0.75
+
+    # --- f_tiempo: curva en U desde el último incendio ≥30 ha (docs/04 §2.4) ---
+    # Años desde el fuego -> factor 0..1. Interpolación lineal en 3..8 y 15..25.
+    # Municipio sin incendio conocido -> se aplica `sin-dato-valor` (neutro).
+    f-tiempo:
+      joven-hasta: 3              # <=3 años: bajo, no hay combustible
+      joven-valor: 0.15
+      pico-desde: 8              # 8..15 años: MÁXIMO (regenerado denso, fino, muerto en pie)
+      pico-hasta: 15
+      pico-valor: 1.00
+      viejo-desde: 25            # >25 años: alto por acumulación, estructura arbolada más lenta
+      viejo-valor: 0.70
+      sin-dato-valor: 1.00       # sin incendio conocido -> neutro (no penaliza ni bonifica)
+
+    # --- comp_vulnerab: versión PROVISIONAL v1.0 (sin IUF; docs/04 §3) ---
+    # OJO: `poblacion` es un PROXY DÉBIL (mide gente en el casco urbano, que
+    # normalmente NO arde; lo relevante es la población DISPERSA en monte, que
+    # aporta el módulo IUF de Fase 5). Se sustituye en v2.0. Documentado en docs/04.
+    vulnerab:
+      peso-poblacion: 0.70
+      peso-espacio-protegido: 0.30   # frac_espacio_protegido; Columbretes EXCLUIDAS
+
+    # --- índice compuesto (docs/04 §4) ---
+    # indice = comp_meteo^0.5 * (peso-estructural*comp_estructural
+    #                          + peso-vulnerab*comp_vulnerab)^0.5   (media geométrica)
+    indice:
+      peso-estructural: 0.65
+      peso-vulnerab: 0.35
+      # Límite SUPERIOR de cada nivel 1..5 (0-20 bajo ... 81-100 extremo).
+      niveles: [20, 40, 60, 80, 100]
