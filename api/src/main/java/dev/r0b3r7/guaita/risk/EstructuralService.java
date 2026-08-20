@@ -16,8 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class EstructuralService {
 
-  // frac_forestal: numerador = forestal ∩ municipio; denominador = municipio CONTINENTAL (sin islas:
-  // Castelló no debe inflar el denominador con las Columbretes, docs/03).
+  // frac_forestal: numerador = forestal ∩ municipio; denominador = municipio CONTINENTAL (sin
+  // islas: Castelló no debe inflar el denominador con las Columbretes, docs/03).
   private static final String Q_AREAS =
       """
       select
@@ -28,7 +28,8 @@ public class EstructuralService {
       """;
 
   // continuidad: forestal ∩ (municipio + 2 km) re-unido (la capa viene ST_Subdivide de Fase 1),
-  // componentes conexos, mayor / total. El buffer evita cortes en la línea jurisdiccional (docs/04).
+  // componentes conexos, mayor / total. El buffer evita cortes en la línea jurisdiccional
+  // (docs/04).
   private static final String Q_CONTINUIDAD =
       """
       with b as (select st_buffer(geom, 2000) g from municipio where ine_code = ?),
@@ -39,8 +40,8 @@ public class EstructuralService {
       select coalesce(max(st_area(g)) / nullif((select st_area(geom) from u), 0), 0) from d
       """;
 
-  // Área forestal (dentro del municipio) cubierta por cada código Anderson. Partición sin solape:
-  // el mapa de combustible no se solapa consigo mismo, así que sumar por código no duplica.
+  // Área forestal del municipio cubierta por cada código Anderson (partición sin solape: el mapa
+  // de combustible no se solapa, así que sumar por código no duplica).
   private static final String Q_PESO_POR_CODIGO =
       """
       with fm as (select st_intersection(f.geom, m.geom) g from terreno_forestal f
@@ -72,7 +73,9 @@ public class EstructuralService {
     this.jdbc = jdbc;
   }
 
-  /** Recalcula {@code estructural_municipio} para una versión. Idempotente (upsert por municipio). */
+  /**
+   * Recalcula {@code estructural_municipio} para una versión. Idempotente (upsert por municipio).
+   */
   @Transactional
   public Resultado precomputar(ModeloParams params) {
     String version = params.version();

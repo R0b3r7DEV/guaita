@@ -107,7 +107,13 @@ class EstructuralRunner implements ApplicationRunner {
               String.format(
                   Locale.ROOT,
                   "  %-24s fracForestal=%.2f cont=%.2f peso=%.2f fPend=%.2f sinComb=%.0f%% -> ESTATICA=%.1f",
-                  rs.getString("nombre"), ff, co, pm, fp, rs.getDouble("fsc") * 100, pe));
+                  rs.getString("nombre"),
+                  ff,
+                  co,
+                  pm,
+                  fp,
+                  rs.getDouble("fsc") * 100,
+                  pe));
         });
   }
 }

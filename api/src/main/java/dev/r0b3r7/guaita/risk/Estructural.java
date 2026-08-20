@@ -51,9 +51,9 @@ public final class Estructural {
   }
 
   /**
-   * Parte estática (0..100): {@code 100 · frac_forestal^0.5 · (0.5 + 0.5·continuidad) · peso ·
-   * (0.6 + 0.4·f_pendiente)}. La raíz de frac_forestal evita descartar un municipio con 30 %
-   * forestal (30 % de un término grande sigue siendo mucho monte).
+   * Parte estática (0..100): {@code 100 · frac_forestal^0.5 · (0.5 + 0.5·continuidad) · peso · (0.6
+   * + 0.4·f_pendiente)}. La raíz de frac_forestal evita descartar un municipio con 30 % forestal
+   * (30 % de un término grande sigue siendo mucho monte).
    */
   public static double parteEstatica(
       double fracForestal, double continuidad, double peso, double fPendiente) {
