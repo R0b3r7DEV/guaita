@@ -16,8 +16,8 @@ public final class Regeneracion {
   private Regeneracion() {}
 
   /**
-   * Factor 0..1 dados los años desde el incendio. Constante en los tramos plano-joven, meseta-pico y
-   * viejo; interpolación lineal en la subida (jovenHasta..picoDesde) y la bajada
+   * Factor 0..1 dados los años desde el incendio. Constante en los tramos plano-joven, meseta-pico
+   * y viejo; interpolación lineal en la subida (jovenHasta..picoDesde) y la bajada
    * (picoHasta..viejoDesde).
    */
   public static double fTiempo(int anios, ModeloParams.FTiempo c) {
@@ -43,8 +43,8 @@ public final class Regeneracion {
   /**
    * Años completos desde el incendio más reciente en o antes de {@code referencia}, o vacío si no
    * hay ninguno. {@code incendios} son las fechas de inicio de los incendios que YA cualifican para
-   * el municipio (filtrados por el umbral de reparto). Es por municipio Y fecha: el mismo término da
-   * distinto según la fecha de referencia.
+   * el municipio (filtrados por el umbral de reparto). Es por municipio Y fecha: el mismo término
+   * da distinto según la fecha de referencia.
    */
   public static OptionalInt aniosDesdeUltimoIncendio(
       LocalDate referencia, List<LocalDate> incendios) {

@@ -37,16 +37,23 @@ class RegeneracionTest {
 
   @Test
   void aniosDesdeElUltimoIncendioDependeDeLaFecha() {
-    List<LocalDate> incendios = List.of(LocalDate.parse("2012-06-01"), LocalDate.parse("2022-08-15"));
+    List<LocalDate> incendios =
+        List.of(LocalDate.parse("2012-06-01"), LocalDate.parse("2022-08-15"));
     // en 2026 manda el de 2022
-    assertEquals(4, Regeneracion.aniosDesdeUltimoIncendio(LocalDate.parse("2026-08-21"), incendios).getAsInt());
+    assertEquals(
+        4,
+        Regeneracion.aniosDesdeUltimoIncendio(LocalDate.parse("2026-08-21"), incendios).getAsInt());
     // en 2015 solo cualifica el de 2012 -> distinto valor para el MISMO municipio
-    assertEquals(2, Regeneracion.aniosDesdeUltimoIncendio(LocalDate.parse("2015-01-01"), incendios).getAsInt());
+    assertEquals(
+        2,
+        Regeneracion.aniosDesdeUltimoIncendio(LocalDate.parse("2015-01-01"), incendios).getAsInt());
   }
 
   @Test
   void sinIncendiosOSoloFuturosDaVacio() {
-    assertFalse(Regeneracion.aniosDesdeUltimoIncendio(LocalDate.parse("2026-01-01"), List.of()).isPresent());
+    assertFalse(
+        Regeneracion.aniosDesdeUltimoIncendio(LocalDate.parse("2026-01-01"), List.of())
+            .isPresent());
     OptionalInt soloFuturo =
         Regeneracion.aniosDesdeUltimoIncendio(
             LocalDate.parse("2020-01-01"), List.of(LocalDate.parse("2022-08-15")));
