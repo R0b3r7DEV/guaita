@@ -46,8 +46,10 @@ load_shp() { # shp_path, categoria, source_label
   fi
   echo "==> $cat: cargando $(basename "$shp") (25830 nativo, se fuerza por defensa)…"
   run_sql -c "drop table if exists stg_ep;"
+  # -select "" : solo geometría, sin atributos. Además de que no los usamos, evita
+  # que un campo como shape_area (~7e7 m2) desborde el numeric que GDAL infiere.
   ogr2ogr -f PostgreSQL "$PG" "$shp" \
-    -nln stg_ep -overwrite \
+    -nln stg_ep -overwrite -select "" \
     -t_srs EPSG:25830 -nlt PROMOTE_TO_MULTI \
     -lco GEOMETRY_NAME=geom --config PG_USE_COPY YES
 
