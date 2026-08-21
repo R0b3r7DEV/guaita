@@ -282,6 +282,16 @@ pinar (0,45), 10 arbolado con sotobosque y restos (0,85), 11 restos ligeros
 > detienen en discontinuidades, de ahí que no encabecen la tabla pese a su
 > velocidad. Calibración en Fase 4 mediante la búsqueda en rejilla de docs/09.
 
+> **Cobertura del overlay medida en Fase 3.** El overlay `terreno_forestal ∩
+> modelo_combustible_patfor` cubre el **94,8 %** de la superficie forestal
+> provincial; el hueco usa `peso-defecto` (fichero de config) y se registra por
+> municipio en `frac_sin_combustible` (calidadDato, docs/06). El hueco ≥ 20 %
+> afecta a **15 municipios, todos costeros con poco monte**, así que el impacto
+> real sobre el índice es bajo. Casos límite conocidos: **les Alqueries y Geldo
+> (100 % sin dato de combustible)** — su peso es enteramente el valor por defecto;
+> con `frac_forestal` mínimo apenas importan, pero queda escrito. Candidato de
+> calibración de Fase 4.
+
 ### 2.3 Pendiente
 
 La velocidad de propagación crece de forma marcadamente no lineal con la
@@ -292,6 +302,12 @@ manda son los barrancos, no el promedio del término.
 ```
 f_pendiente = min(1.0, (pendiente_p90_pct / 100) * 2.0)
 ```
+
+> **Hallazgo de Fase 3 (candidato de calibración).** Con la topografía real de
+> Castellón, `f_pendiente` **satura a 1.0 en 57 de 135 municipios (42 %)**: casi
+> todo el interior toca el techo y el factor pierde poder discriminante ahí. El
+> `×2` con tope al 50 % de la pendiente p90 es agresivo para lo escarpado de la
+> provincia; candidato a suavizar en la calibración de Fase 4 (docs/09).
 
 ### 2.4 Tiempo desde el último incendio — la curva en U
 
