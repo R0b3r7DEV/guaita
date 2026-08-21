@@ -26,9 +26,10 @@ class ModeloParamsTest {
     assertEquals(0.75, p.combustible().pesoDefecto(), 1e-9);
     assertEquals(13, p.combustible().pesos().size(), "los 13 modelos Anderson");
 
-    // f_tiempo: pico = 1.0; sin incendio conocido -> neutro.
+    // f_tiempo: pico = 1.0; sin incendio conocido -> neutro; umbral de reparto.
     assertEquals(1.00, p.fTiempo().picoValor(), 1e-9);
     assertEquals(1.00, p.fTiempo().sinDatoValor(), 1e-9);
+    assertEquals(0.10, p.fTiempo().repartoMinFracForestal(), 1e-9);
 
     // Vulnerabilidad provisional e índice.
     assertEquals(0.70, p.vulnerab().pesoPoblacion(), 1e-9);

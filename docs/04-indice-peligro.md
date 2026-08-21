@@ -337,6 +337,22 @@ f_tiempo(t) = 0.15                         si t <= 3
 Curva propuesta, **calibrable en la fase de validación**. Dejarla en un fichero
 de configuración, no incrustada en el código.
 
+> **Criterio de reparto (Fase 3).** Un municipio ve su combustible reseteado por un
+> incendio SOLO si el perímetro cubre ≥ `reparto-min-frac-forestal` (config, 10 %
+> por defecto) de su superficie forestal. Bejís (2022) quemó once términos con
+> reparto muy desigual: un municipio rozado por el borde no se resetea. El cruce
+> perímetro↔municipio es espacial (PostGIS contra `municipio.geom`), así que no se
+> depende del atributo de municipio de la fuente. Umbral calibrable en Fase 4.
+
+> **Fuente y fallback (EFFIS/GWIS).** Los perímetros históricos vienen de EFFIS (o
+> GWIS, mismo JRC — perímetros finales con fecha de inicio/fin, ~30 ha mínimo, 2000→
+> presente). Si la fuente no está disponible, `f_tiempo` toma `sin-dato-valor`
+> (1.00, neutro) para todos los municipios: el índice se calcula igual
+> (`comp_estructural` = parte estática) y el sistema es **shippable sin EFFIS**, con
+> la limitación de que no captura las cicatrices de regeneración (Bejís/Villanueva
+> entrando en su ventana de máximo peligro). Documentado para no venderlo como
+> cubierto.
+
 ### Combinación estructural
 
 ```

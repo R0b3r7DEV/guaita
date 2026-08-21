@@ -75,6 +75,10 @@ guaita:
       viejo-desde: 25            # >25 años: alto por acumulación, estructura arbolada más lenta
       viejo-valor: 0.70
       sin-dato-valor: 1.00       # sin incendio conocido -> neutro (no penaliza ni bonifica)
+      # Un municipio "arde" (reset de combustible) SOLO si el perímetro cubre al menos esta
+      # fracción de SU superficie forestal. Bejís quemó 11 términos con reparto muy desigual; un
+      # municipio rozado por el borde no tiene el combustible reseteado. Umbral calibrable (Fase 4).
+      reparto-min-frac-forestal: 0.10
 
     # --- comp_vulnerab: versión PROVISIONAL v1.0 (sin IUF; docs/04 §3) ---
     # OJO: `poblacion` es un PROXY DÉBIL (mide gente en el casco urbano, que

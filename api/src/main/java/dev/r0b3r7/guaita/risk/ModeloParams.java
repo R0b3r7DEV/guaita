@@ -34,7 +34,8 @@ public record ModeloParams(
       double picoValor,
       int viejoDesde,
       double viejoValor,
-      double sinDatoValor) {}
+      double sinDatoValor,
+      double repartoMinFracForestal) {}
 
   /** Pesos de la vulnerabilidad provisional v1.0 (sin IUF; docs/04 §3). */
   public record Vulnerab(double pesoPoblacion, double pesoEspacioProtegido) {}
