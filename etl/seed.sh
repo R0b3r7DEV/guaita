@@ -23,7 +23,10 @@ bash /etl/load_terreno_forestal.sh
 echo "==> [2/3] Modelo de combustible (PATFOR, Anderson)…"
 bash /etl/load_modelo_combustible.sh
 
-echo "==> [3/3] Topografía (MDT25: pendiente, orientación, altitud)…"
+echo "==> [3/4] Topografía (MDT25: pendiente, orientación, altitud)…"
 bash /etl/load_topografia.sh
 
-echo "==> seed: Fase 1 COMPLETA (municipios + forestal + combustible + topografía)."
+echo "==> [4/4] Perímetros históricos de incendio (semillas + EFFIS si hay fichero)…"
+bash /etl/load_incendios.sh
+
+echo "==> seed: COMPLETA (municipios + forestal + combustible + topografía + incendios)."
