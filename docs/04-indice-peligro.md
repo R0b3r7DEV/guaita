@@ -384,6 +384,29 @@ pueblo con una sola salida es un problema operativo grave y hay que reflejarlo.
 Este componente es el que hace que el Desert de les Palmes puntúe alto pese a
 tener poca superficie forestal: masa pequeña, población enorme al lado.
 
+> **Versión PROVISIONAL (Fase 3, v1.0).** La fórmula de arriba necesita el módulo
+> WUI (doc 05: edificaciones en interfaz, población en franja de 500 m, vías de
+> evacuación), que aún no existe. Hasta entonces se usa un proxy más pobre, con
+> los pesos en `model-params.yml`:
+>
+> ```
+> comp_vulnerab = 100 * (0.70 * poblacion_norm + 0.30 * frac_espacio_protegido)
+> ```
+>
+> - `poblacion_norm`: población municipal normalizada linealmente por el máximo
+>   provincial (0..1). Mide exposición ABSOLUTA, no per cápita.
+> - `frac_espacio_protegido`: fracción del término (continental) cubierta por Red
+>   Natura 2000 + ENP (fuente: Infraestructura Verde del ICV/GVA).
+>
+> **La población en bruto es un proxy DÉBIL de exposición**: mide gente en el
+> casco urbano, que normalmente NO arde, no viviendas diseminadas en interfaz
+> urbano-forestal, que es lo que de verdad se quema. Se sustituye en **v2.0** por
+> los datos reales del módulo IUF/WUI. Queda dicho para no venderlo como cerrado.
+>
+> **Columbretes excluidas**: la Reserva Natural (marina, sin combustible ni
+> interfaz) se descarta al recortar tanto los espacios protegidos como el
+> denominador municipal a `mv_provincia_continental`.
+
 ---
 
 ## 4. Índice compuesto
