@@ -55,8 +55,7 @@ public class VulnerabilidadService {
   public Resultado precomputar(ModeloParams params) {
     String version = params.version();
     ModeloParams.Vulnerab cfg = params.vulnerab();
-    int poblacionMax =
-        jdbc.queryForObject("select max(poblacion) from municipio", Integer.class);
+    int poblacionMax = jdbc.queryForObject("select max(poblacion) from municipio", Integer.class);
     List<String> munis =
         jdbc.queryForList("select ine_code from municipio order by ine_code", String.class);
     int filas = 0;
