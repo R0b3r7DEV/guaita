@@ -201,14 +201,14 @@ begin
 
   -- b) Bejís ~19.000 ha y Villanueva de Viver ~4.700 ha (tolerancia de orden de
   --    magnitud: detecta un fallo de unidades o de recorte, no un ajuste fino).
-  select max(superficie_ha) into ha_bejis
+  select max(i.superficie_ha) into ha_bejis
   from incendio_historico i join municipio m on m.ine_code = '12022'
   where st_intersects(i.geom, m.geom);
   if ha_bejis is null or ha_bejis < 8000 or ha_bejis > 40000 then
     raise exception 'superficie de Bejís = % ha, fuera de [8000, 40000]', ha_bejis;
   end if;
 
-  select max(superficie_ha) into ha_villa
+  select max(i.superficie_ha) into ha_villa
   from incendio_historico i join municipio m on m.ine_code = '12133'
   where st_intersects(i.geom, m.geom);
   if ha_villa is null or ha_villa < 2000 or ha_villa > 10000 then
