@@ -1,5 +1,7 @@
 package dev.r0b3r7.guaita.ingest;
 
+import dev.r0b3r7.guaita.risk.IndiceService;
+import dev.r0b3r7.guaita.risk.ModeloParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -26,9 +28,13 @@ public class MeteoScheduler {
   private static final Logger log = LoggerFactory.getLogger(MeteoScheduler.class);
 
   private final MeteoDiarioService service;
+  private final IndiceService indice;
+  private final ModeloParams params;
 
-  public MeteoScheduler(MeteoDiarioService service) {
+  public MeteoScheduler(MeteoDiarioService service, IndiceService indice, ModeloParams params) {
     this.service = service;
+    this.indice = indice;
+    this.params = params;
     // El bean solo se crea si guaita.scheduler.enabled=true, así que este log confirma la
     // activación y deja el cron + zona en el arranque para poder verificarlos.
     log.info("scheduler de meteo ACTIVO: cron '{}', zona {}", CRON, ZONA);
@@ -50,6 +56,12 @@ public class MeteoScheduler {
         log.warn(
             "retraso de {} d respecto al corte del archivo; vigilar si crece", r.diasRetraso());
       }
+      // Índice del día más reciente, tras el FWI. Idempotente; refresca mv_indice_hoy.
+      IndiceService.Resultado ir = indice.calcularHoy(params);
+      int[] nn = ir.porNivel();
+      log.info(
+          "índice OK: fecha={} filas={} niveles={}/{}/{}/{}/{}",
+          ir.fecha(), ir.filas(), nn[0], nn[1], nn[2], nn[3], nn[4]);
     } catch (RuntimeException e) {
       // Fallo de fuente/validación: no se ha escrito nada. La siguiente pasada recupera el hueco.
       log.error("pasada diaria FALLÓ (se recupera en la siguiente): {}", e.getMessage(), e);
