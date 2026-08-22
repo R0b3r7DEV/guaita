@@ -1,27 +1,52 @@
-import MapView from "./MapView";
+import { useState } from "react";
+import MapView, { type MetaMapa } from "./MapView";
+import Leyenda from "./Leyenda";
+import PanelDetalle from "./PanelDetalle";
+import PanelMetodologia from "./PanelMetodologia";
 
 /**
- * Fase 1: el visor de los 135 términos de la provincia. Geometría e identidad desde el endpoint
- * MVT (ADR-04); el índice de peligro y el coropleto llegan en la Fase 3. El aviso permanente de que
- * NO es un sistema de emergencias (docs/07, T7) va arriba, visible sin scroll.
+ * Visor coropleto del índice de peligro (Fase 3). Geometría desde la tesela inmutable (ADR-04/06),
+ * nivel unido por ine_code (feature-state). El aviso permanente de que NO es un sistema de
+ * emergencias (docs/07, T7 —la amenaza más seria del proyecto—) va arriba, visible sin scroll.
  */
 function App() {
+  const [seleccion, setSeleccion] = useState<string | null>(null);
+  const [meta, setMeta] = useState<MetaMapa>({ fecha: null, versionModelo: null, obsoleto: false });
+  const [metodoAbierta, setMetodoAbierta] = useState(false);
+
   return (
     <div className="app">
-      {/* Aviso permanente: NO es un sistema de emergencia (docs/07, T7). */}
       <aside className="disclaimer" role="note" aria-label="Aviso importante">
         <strong>GUAITA no es un sistema de emergencias.</strong> No sustituye al 112 ni al boletín
-        oficial PREVIFOC de la Generalitat Valenciana. Ante un incendio, llame al{" "}
-        <strong>112</strong>.
+        oficial PREVIFOC de la Generalitat Valenciana. Herramienta analítica de portafolio: el índice
+        no es oficial. Ante un incendio, llame al <strong>112</strong>.
       </aside>
 
       <div className="map-wrap">
-        <MapView />
+        <MapView onSelect={setSeleccion} onMeta={setMeta} />
+
         <div className="brand">
           <strong>GUAITA</strong>
           <span>Riesgo de incendio forestal · Castellón</span>
+          <button className="brand-metodo" onClick={() => setMetodoAbierta(true)}>
+            Metodología y limitaciones
+          </button>
         </div>
+
+        {meta.obsoleto && (
+          <div className="obsoleto" role="alert">
+            Índice no disponible ahora mismo. El mapa no refleja el peligro actual.
+          </div>
+        )}
+
+        <Leyenda fecha={meta.fecha} obsoleto={meta.obsoleto} />
+
+        {seleccion && (
+          <PanelDetalle ineCode={seleccion} onClose={() => setSeleccion(null)} />
+        )}
       </div>
+
+      {metodoAbierta && <PanelMetodologia onClose={() => setMetodoAbierta(false)} />}
     </div>
   );
 }

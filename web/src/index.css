@@ -103,3 +103,247 @@ body {
 .maplibregl-popup-anchor-bottom .maplibregl-popup-tip {
   border-top-color: #161c19;
 }
+
+/* --- Fase 3: coropleto, leyenda, panel de detalle, metodología --- */
+
+.brand-metodo {
+  margin-top: 0.4rem;
+  pointer-events: auto;
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid rgba(217, 119, 6, 0.5);
+  border-radius: 6px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+.brand-metodo:hover {
+  background: rgba(217, 119, 6, 0.12);
+}
+
+/* La marca deja pasar el ratón salvo su botón. */
+.brand {
+  pointer-events: none;
+}
+
+.obsoleto {
+  position: absolute;
+  top: 0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  background: var(--disclaimer-bg);
+  color: var(--disclaimer-fg);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.85rem;
+}
+
+.leyenda {
+  position: absolute;
+  bottom: 0.75rem;
+  left: 0.75rem;
+  z-index: 1;
+  background: rgba(15, 18, 17, 0.9);
+  border: 1px solid rgba(154, 168, 161, 0.25);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.8rem;
+}
+.leyenda-cab {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0.45rem;
+}
+.leyenda-fecha {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.leyenda ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+}
+.leyenda li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.leyenda-caja {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  flex: none;
+}
+.leyenda-rango {
+  color: var(--muted);
+}
+
+.panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 3;
+  width: min(370px, 92vw);
+  height: 100%;
+  overflow-y: auto;
+  background: rgba(12, 15, 14, 0.97);
+  border-left: 1px solid rgba(154, 168, 161, 0.3);
+  padding: 1rem 1.1rem 2rem;
+}
+.panel-cerrar {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.6rem;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.panel-info {
+  color: var(--muted);
+  margin-top: 2rem;
+}
+.panel-cab h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+.panel-comarca {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.panel-nivel {
+  margin: 0.6rem 0 0.3rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+  color: #0f1211;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+.panel-fecha {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.panel h3 {
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin: 1.1rem 0 0.5rem;
+}
+.panel-nota {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.comp {
+  margin-bottom: 0.5rem;
+}
+.comp-cab {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+.comp-barra {
+  height: 8px;
+  background: rgba(154, 168, 161, 0.18);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 0.2rem;
+}
+.comp-relleno {
+  height: 100%;
+  background: #6ea8fe;
+  border-radius: 4px;
+}
+
+.fwi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.35rem;
+  font-size: 0.82rem;
+}
+.fwi-grid span {
+  background: rgba(154, 168, 161, 0.12);
+  border-radius: 5px;
+  padding: 0.3rem 0.4rem;
+  text-align: center;
+}
+
+.serie-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.serie-eje {
+  stroke: rgba(154, 168, 161, 0.35);
+  stroke-width: 1;
+}
+.serie-linea {
+  fill: none;
+  stroke: #e7ece9;
+  stroke-width: 2;
+}
+.serie-pie {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.serie-aviso,
+.serie-vacia {
+  color: var(--accent);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.modal-fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+.modal {
+  position: relative;
+  max-width: 620px;
+  max-height: 85vh;
+  overflow-y: auto;
+  background: #121815;
+  border: 1px solid rgba(154, 168, 161, 0.3);
+  border-radius: 12px;
+  padding: 1.5rem 1.75rem;
+}
+.metodo-formula {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: 0.82rem;
+  background: rgba(154, 168, 161, 0.1);
+  padding: 0.5rem 0.6rem;
+  border-radius: 6px;
+  overflow-x: auto;
+}
+.metodo-lista,
+.metodo-caveats {
+  font-size: 0.88rem;
+  line-height: 1.5;
+  padding-left: 1.1rem;
+}
+.metodo-caveats li {
+  margin-bottom: 0.4rem;
+}
+.metodo-doc {
+  display: inline-block;
+  margin-top: 0.6rem;
+  color: var(--accent);
+}

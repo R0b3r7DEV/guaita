@@ -2,32 +2,48 @@ import { useEffect, useRef } from "react";
 import maplibregl, { type StyleSpecification } from "maplibre-gl";
 import { z } from "zod";
 import "maplibre-gl/dist/maplibre-gl.css";
+import { listaMunicipios } from "./api";
+import { NIVELES, SIN_DATO } from "./niveles";
 
-// Validación en el borde (convención del repo): el extent debe traer 4 números.
 const ExtentSchema = z.object({
   bbox: z.tuple([z.number(), z.number(), z.number(), z.number()]),
 });
 
-// El visor pide /api al mismo origen: en dev lo reenvía Vite (proxy), en producción Apache/nginx.
 const TILES = `${window.location.origin}/api/v1/tiles/municipios/{z}/{x}/{y}.mvt`;
 const EXTENT_URL = `${window.location.origin}/api/v1/mapa/extent`;
 
-// Atribución obligatoria, en el control de MapLibre (no en un aparte).
-const ATTRIBUTION =
-  '© <a href="https://www.ign.es" target="_blank" rel="noreferrer">IGN/CNIG</a> ' +
-  "(límites municipales y MDT25, CC-BY 4.0) · " +
-  '© <a href="https://agroambient.gva.es" target="_blank" rel="noreferrer">Generalitat ' +
-  "Valenciana</a> (PATFOR)";
+// Atribución obligatoria por fuente (docs/07), en el control de MapLibre.
+const ATTRIBUTION = [
+  '© <a href="https://www.ign.es" target="_blank" rel="noreferrer">IGN/CNIG</a>' +
+    " (límites y MDT25, CC-BY 4.0)",
+  '© <a href="https://agroambient.gva.es" target="_blank" rel="noreferrer">GVA</a> (PATFOR)',
+  '© <a href="https://www.miteco.gob.es" target="_blank" rel="noreferrer">MITECO</a>' +
+    " (Red Natura 2000 / ENP)",
+  '© <a href="https://open-meteo.com" target="_blank" rel="noreferrer">Open-Meteo</a>;' +
+    " contains modified Copernicus Climate Change Service information (ERA5)",
+].join(" · ");
 
 const SRC = "municipios";
-const HOVER_ON: maplibregl.ExpressionSpecification = [
-  "boolean",
-  ["feature-state", "hover"],
-  false,
+const HOVER_ON: maplibregl.ExpressionSpecification = ["boolean", ["feature-state", "hover"], false];
+
+// Coropleta por NIVEL vía feature-state (unido por ine_code sobre la tesela inmutable, ADR-06):
+// cinco clases discretas, no un índice continuo. Sin nivel (sin dato) -> gris.
+const FILL_COLOR: maplibregl.ExpressionSpecification = [
+  "match",
+  ["to-number", ["feature-state", "nivel"], 0],
+  NIVELES[0].nivel,
+  NIVELES[0].color,
+  NIVELES[1].nivel,
+  NIVELES[1].color,
+  NIVELES[2].nivel,
+  NIVELES[2].color,
+  NIVELES[3].nivel,
+  NIVELES[3].color,
+  NIVELES[4].nivel,
+  NIVELES[4].color,
+  SIN_DATO,
 ];
 
-// Estilo autocontenido: fondo liso + la capa de municipios. Sin fondo ráster de terceros, sin
-// token de Mapbox ni servicios con clave (ADR-04 / requisitos de seguridad).
 const STYLE: StyleSpecification = {
   version: 8,
   sources: {
@@ -36,8 +52,6 @@ const STYLE: StyleSpecification = {
       tiles: [TILES],
       minzoom: 0,
       maxzoom: 16,
-      // promoteId: la id de cada feature pasa a ser su ine_code. Imprescindible para que
-      // setFeatureState (hover ahora, coropleto del índice en Fase 3) case por municipio.
       promoteId: "ine_code",
       attribution: ATTRIBUTION,
     },
@@ -49,10 +63,7 @@ const STYLE: StyleSpecification = {
       type: "fill",
       source: SRC,
       "source-layer": SRC,
-      paint: {
-        "fill-color": ["case", HOVER_ON, "#3b4a42", "#1c2420"],
-        "fill-opacity": 0.9,
-      },
+      paint: { "fill-color": FILL_COLOR, "fill-opacity": 0.85 },
     },
     {
       id: "municipios-borde",
@@ -60,26 +71,30 @@ const STYLE: StyleSpecification = {
       source: SRC,
       "source-layer": SRC,
       paint: {
-        "line-color": ["case", HOVER_ON, "#f59e0b", "#5a6b61"],
-        "line-width": ["case", HOVER_ON, 2.5, 0.7],
+        "line-color": ["case", HOVER_ON, "#ffffff", "#0f1211"],
+        "line-width": ["case", HOVER_ON, 2.2, 0.6],
       },
     },
   ],
 };
 
-function escapeHtml(s: string): string {
-  const rep: Record<string, string> = {
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;",
-  };
-  return s.replace(/[&<>"']/g, (c) => rep[c] ?? c);
+export interface MetaMapa {
+  fecha: string | null;
+  versionModelo: string | null;
+  obsoleto: boolean;
 }
 
-export default function MapView() {
+interface Props {
+  onSelect: (ineCode: string) => void;
+  onMeta: (meta: MetaMapa) => void;
+}
+
+export default function MapView({ onSelect, onMeta }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const onSelectRef = useRef(onSelect);
+  const onMetaRef = useRef(onMeta);
+  onSelectRef.current = onSelect;
+  onMetaRef.current = onMeta;
 
   useEffect(() => {
     if (!containerRef.current) {
@@ -90,32 +105,60 @@ export default function MapView() {
       style: STYLE,
       center: [-0.2, 40.1],
       zoom: 7,
-      attributionControl: false, // se añade abajo, no compacto, para que la atribución se vea
+      attributionControl: false,
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
     map.addControl(new maplibregl.AttributionControl({ compact: false }));
 
-    // Encuadre inicial desde el extent CONTINENTAL (no la administrativa: esta arrancaría sobre
-    // 50 km de mar por las Columbretes). Si falla, el visor sigue con el encuadre por defecto.
     fetch(EXTENT_URL)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         const parsed = ExtentSchema.safeParse(data);
-        if (!parsed.success) {
-          return;
+        if (parsed.success) {
+          const [w, s, e, n] = parsed.data.bbox;
+          map.fitBounds(
+            [
+              [w, s],
+              [e, n],
+            ],
+            { padding: 24, duration: 0 },
+          );
         }
-        const [w, s, e, n] = parsed.data.bbox;
-        map.fitBounds(
-          [
-            [w, s],
-            [e, n],
-          ],
-          { padding: 24, duration: 0 },
-        );
       })
       .catch(() => {});
 
-    // Resalte del límite con feature-state (además valida que promoteId está bien puesto).
+    // Nivel por municipio; se aplica como feature-state y se RE-aplica cuando entran teselas nuevas
+    // (otro zoom), porque el estado solo pinta features ya cargadas.
+    const nivelPorIne = new Map<string, number>();
+    const aplicarEstados = () => {
+      for (const [ine, nivel] of nivelPorIne) {
+        map.setFeatureState({ source: SRC, sourceLayer: SRC, id: ine }, { nivel });
+      }
+    };
+
+    listaMunicipios()
+      .then((lista) => {
+        for (const m of lista.data) {
+          nivelPorIne.set(m.ineCode, m.nivel);
+        }
+        aplicarEstados();
+        onMetaRef.current({
+          fecha: lista.meta.fecha,
+          versionModelo: lista.meta.versionModelo,
+          obsoleto: false,
+        });
+      })
+      .catch(() => {
+        // 503 u otro fallo: el mapa queda en gris (sin dato) y se avisa; NUNCA se inventan niveles.
+        onMetaRef.current({ fecha: null, versionModelo: null, obsoleto: true });
+      });
+
+    map.on("sourcedata", (e) => {
+      if (e.sourceId === SRC && e.isSourceLoaded) {
+        aplicarEstados();
+      }
+    });
+
     let hovered: string | number | undefined;
     const clearHover = () => {
       if (hovered !== undefined) {
@@ -138,19 +181,11 @@ export default function MapView() {
       clearHover();
     });
 
-    // Clic en un término -> nombre y comarca.
-    const popup = new maplibregl.Popup({ closeButton: true, closeOnClick: true });
     map.on("click", "municipios-relleno", (ev) => {
       const f = ev.features?.[0];
-      if (!f) {
-        return;
+      if (f?.id !== undefined) {
+        onSelectRef.current(String(f.id));
       }
-      const nombre = escapeHtml(String(f.properties?.nombre ?? "—"));
-      const comarca = escapeHtml(String(f.properties?.comarca ?? "—"));
-      popup
-        .setLngLat(ev.lngLat)
-        .setHTML(`<strong>${nombre}</strong><br /><span class="pop-comarca">${comarca}</span>`)
-        .addTo(map);
     });
 
     return () => map.remove();
