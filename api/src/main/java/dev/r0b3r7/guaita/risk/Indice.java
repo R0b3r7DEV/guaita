@@ -4,9 +4,9 @@ import java.util.List;
 
 /**
  * Índice de peligro compuesto (docs/04 §4). Combina los tres componentes 0..100 con una MEDIA
- * GEOMÉTRICA, no aritmética, y es deliberado: si {@code comp_meteo} es cero (día lluvioso) el índice
- * debe irse a cero por mucho combustible que haya. Una suma ponderada daría falsos positivos todo el
- * invierno. Puro y sin estado.
+ * GEOMÉTRICA, no aritmética, y es deliberado: si {@code comp_meteo} es cero (día lluvioso) el
+ * índice debe irse a cero por mucho combustible que haya. Una suma ponderada daría falsos positivos
+ * todo el invierno. Puro y sin estado.
  */
 public final class Indice {
 
@@ -26,8 +26,8 @@ public final class Indice {
   }
 
   /**
-   * Nivel 1..5 según los límites SUPERIORES de {@code niveles} (config, p.ej. [20,40,60,80,100]): el
-   * primer tramo cuyo tope no supera el índice. Un índice justo en el tope cae en ese tramo.
+   * Nivel 1..5 según los límites SUPERIORES de {@code niveles} (config, p.ej. [20,40,60,80,100]):
+   * el primer tramo cuyo tope no supera el índice. Un índice justo en el tope cae en ese tramo.
    */
   public static int nivel(double indice, List<Integer> niveles) {
     for (int i = 0; i < niveles.size(); i++) {

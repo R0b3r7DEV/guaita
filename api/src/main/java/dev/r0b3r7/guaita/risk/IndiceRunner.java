@@ -58,7 +58,11 @@ class IndiceRunner implements ApplicationRunner {
     int[] n = r.porNivel();
     log.info(
         "== a) reparto por nivel (1 bajo .. 5 extremo): {} / {} / {} / {} / {} ==",
-        n[0], n[1], n[2], n[3], n[4]);
+        n[0],
+        n[1],
+        n[2],
+        n[3],
+        n[4]);
 
     // b) top-10 provincial con desglose
     log.info("== b) TOP-10 provincial de hoy ==");

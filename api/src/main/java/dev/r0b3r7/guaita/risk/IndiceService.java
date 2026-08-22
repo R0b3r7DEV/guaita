@@ -96,8 +96,8 @@ public class IndiceService {
 
   /**
    * Calcula y persiste el índice de {@code fecha} para los 135. Devuelve el reparto por nivel.
-   * f_tiempo aplica la curva de regeneración a los municipios con incendio que cumple el reparto; el
-   * resto queda neutro (sin-dato-valor).
+   * f_tiempo aplica la curva de regeneración a los municipios con incendio que cumple el reparto;
+   * el resto queda neutro (sin-dato-valor).
    */
   @Transactional
   public Resultado calcularDia(ModeloParams params, LocalDate fecha) {
@@ -116,8 +116,7 @@ public class IndiceService {
       }
       Map<String, Object> f = jdbc.queryForMap(Q_FACTORES, fecha, ine);
       double parteEstatica =
-          Estructural.parteEstatica(
-              num(f, "ff"), num(f, "co"), num(f, "pm"), num(f, "fp"));
+          Estructural.parteEstatica(num(f, "ff"), num(f, "co"), num(f, "pm"), num(f, "fp"));
       double ft = fTiempo.getOrDefault(ine, cfgT.sinDatoValor());
       double compEstructural = Math.min(100.0, Math.max(0.0, parteEstatica * ft));
       double compVulnerab = num(f, "cv");
@@ -127,7 +126,15 @@ public class IndiceService {
       int nivel = Indice.nivel(indice, params.indice().niveles());
 
       jdbc.update(
-          UPSERT, ine, fecha, compMeteo, compEstructural, compVulnerab, indice, nivel, r303030,
+          UPSERT,
+          ine,
+          fecha,
+          compMeteo,
+          compEstructural,
+          compVulnerab,
+          indice,
+          nivel,
+          r303030,
           version);
       porNivel[nivel - 1]++;
       filas++;
@@ -165,7 +172,9 @@ public class IndiceService {
     return ((Number) row.get(col)).doubleValue();
   }
 
-  /** Invariantes: 135 filas para la fecha, sin NULL en índice/nivel (los CHECK ya fuerzan rangos). */
+  /**
+   * Invariantes: 135 filas para la fecha, sin NULL en índice/nivel (los CHECK ya fuerzan rangos).
+   */
   public List<String> asserciones(LocalDate fecha) {
     List<String> fallos = new ArrayList<>();
     Integer provincia = jdbc.queryForObject("select count(*) from municipio", Integer.class);

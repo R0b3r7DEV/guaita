@@ -61,7 +61,13 @@ public class MeteoScheduler {
       int[] nn = ir.porNivel();
       log.info(
           "índice OK: fecha={} filas={} niveles={}/{}/{}/{}/{}",
-          ir.fecha(), ir.filas(), nn[0], nn[1], nn[2], nn[3], nn[4]);
+          ir.fecha(),
+          ir.filas(),
+          nn[0],
+          nn[1],
+          nn[2],
+          nn[3],
+          nn[4]);
     } catch (RuntimeException e) {
       // Fallo de fuente/validación: no se ha escrito nada. La siguiente pasada recupera el hueco.
       log.error("pasada diaria FALLÓ (se recupera en la siguiente): {}", e.getMessage(), e);
