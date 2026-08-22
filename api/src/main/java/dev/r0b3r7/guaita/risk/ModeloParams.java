@@ -37,8 +37,11 @@ public record ModeloParams(
       double sinDatoValor,
       double repartoMinFracForestal) {}
 
-  /** Pesos de la vulnerabilidad provisional v1.0 (sin IUF; docs/04 §3). */
-  public record Vulnerab(double pesoPoblacion, double pesoEspacioProtegido) {}
+  /** Pesos y normalización de la vulnerabilidad provisional v1.0 (sin IUF; docs/04 §3). */
+  public record Vulnerab(
+      double pesoPoblacion,
+      double pesoEspacioProtegido,
+      Vulnerabilidad.NormaPoblacion normaPoblacion) {}
 
   /** Combinación del índice y umbrales de nivel (docs/04 §4). */
   public record Indice(double pesoEstructural, double pesoVulnerab, List<Integer> niveles) {}

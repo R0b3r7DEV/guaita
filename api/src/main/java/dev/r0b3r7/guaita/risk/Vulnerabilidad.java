@@ -13,16 +13,32 @@ public final class Vulnerabilidad {
 
   private Vulnerabilidad() {}
 
+  /** Transformación de la población normalizada por el máximo provincial (docs/04 §3). */
+  public enum NormaPoblacion {
+    /** pob/max. Casi binaria: solo la capital puntúa; no discrimina el 90% de la provincia. */
+    LINEAL,
+    /** sqrt(pob/max). Punto medio con lectura física (daño ~ superficie urbanizada, sublineal). */
+    SQRT,
+    /** log1p(pob)/log1p(max). Comprime de más: acerca un pueblo de 200 hab a uno de 2.000. */
+    LOG
+  }
+
   /**
-   * Normalización lineal de la población por el máximo provincial (0..1). Lineal a propósito: mide
-   * exposición ABSOLUTA (más gente = más exposición), no per cápita. Queda sesgada hacia las pocas
-   * ciudades grandes; es parte de la debilidad asumida del proxy (docs/04 §3).
+   * Población normalizada a 0..1 sobre el máximo provincial, con la transformación elegida. Mide
+   * exposición ABSOLUTA (más gente = más exposición), no per cápita. La transformación mejora la
+   * DISCRIMINACIÓN entre municipios, no la validez del proxy (sigue midiendo casco urbano; docs/04
+   * §3).
    */
-  public static double poblacionNorm(int poblacion, int poblacionMax) {
-    if (poblacionMax <= 0) {
+  public static double poblacionNorm(int poblacion, int poblacionMax, NormaPoblacion norma) {
+    if (poblacionMax <= 0 || poblacion <= 0) {
       return 0.0;
     }
-    return Math.min(1.0, Math.max(0.0, (double) poblacion / poblacionMax));
+    double lineal = Math.min(1.0, (double) poblacion / poblacionMax);
+    return switch (norma) {
+      case LINEAL -> lineal;
+      case SQRT -> Math.sqrt(lineal);
+      case LOG -> Math.log1p(poblacion) / Math.log1p(poblacionMax);
+    };
   }
 
   /**

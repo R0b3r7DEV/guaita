@@ -66,7 +66,8 @@ public class VulnerabilidadService {
       double protArea = ((Number) areas.get("protegido_area")).doubleValue();
       double muniCont = ((Number) areas.get("muni_cont_area")).doubleValue();
       double fracProt = muniCont > 0 ? Math.min(1.0, protArea / muniCont) : 0.0;
-      double poblacionNorm = Vulnerabilidad.poblacionNorm(poblacion, poblacionMax);
+      double poblacionNorm =
+          Vulnerabilidad.poblacionNorm(poblacion, poblacionMax, cfg.normaPoblacion());
       double comp = Vulnerabilidad.compVulnerab(poblacionNorm, fracProt, cfg);
 
       jdbc.update(UPSERT, ine, poblacionNorm, fracProt, comp, version);

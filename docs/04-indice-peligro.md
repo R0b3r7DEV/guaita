@@ -393,15 +393,26 @@ tener poca superficie forestal: masa pequeña, población enorme al lado.
 > comp_vulnerab = 100 * (0.70 * poblacion_norm + 0.30 * frac_espacio_protegido)
 > ```
 >
-> - `poblacion_norm`: población municipal normalizada linealmente por el máximo
->   provincial (0..1). Mide exposición ABSOLUTA, no per cápita.
+> - `poblacion_norm`: población municipal normalizada a 0..1 sobre el máximo
+>   provincial y transformada con **raíz cuadrada** (`sqrt(pob/max)`). Mide
+>   exposición ABSOLUTA, no per cápita. Parametrizable en config
+>   (`norma-poblacion: lineal | sqrt | log`) para la calibración de Fase 4.
 > - `frac_espacio_protegido`: fracción del término (continental) cubierta por Red
->   Natura 2000 + ENP (fuente: Infraestructura Verde del ICV/GVA).
+>   Natura 2000 + ENP (fuente: **MITECO**, Banco de Datos de la Naturaleza — los
+>   límites oficiales; la capa Infraestructura Verde del ICV infracubría ~10×).
 >
-> **La población en bruto es un proxy DÉBIL de exposición**: mide gente en el
+> **Por qué sqrt y no lineal ni log.** Lineal deja 122/135 municipios por debajo
+> de 0.05: el término solo distingue a la capital, no mide vulnerabilidad. Log
+> comprime demasiado por abajo (un pueblo de 200 hab queda artificialmente cerca
+> de uno de 2.000, y esa diferencia importa). sqrt es el punto medio y tiene
+> lectura física: el daño potencial escala con la SUPERFICIE urbanizada expuesta,
+> sublineal en población por densidad creciente.
+>
+> **La población sigue siendo un proxy DÉBIL, incluso con sqrt**: mide gente en el
 > casco urbano, que normalmente NO arde, no viviendas diseminadas en interfaz
-> urbano-forestal, que es lo que de verdad se quema. Se sustituye en **v2.0** por
-> los datos reales del módulo IUF/WUI. Queda dicho para no venderlo como cerrado.
+> urbano-forestal, que es lo que de verdad se quema. La transformación mejora la
+> DISCRIMINACIÓN entre municipios, **no la validez** del proxy. La exposición real
+> llega en **v2.0** con el módulo IUF/WUI. Queda dicho para no venderlo como cerrado.
 >
 > **Columbretes excluidas**: la Reserva Natural (marina, sin combustible ni
 > interfaz) se descarta al recortar tanto los espacios protegidos como el

@@ -33,6 +33,7 @@ class ModeloParamsTest {
 
     // Vulnerabilidad provisional e índice.
     assertEquals(0.70, p.vulnerab().pesoPoblacion(), 1e-9);
+    assertEquals(Vulnerabilidad.NormaPoblacion.SQRT, p.vulnerab().normaPoblacion());
     assertEquals(0.65, p.indice().pesoEstructural(), 1e-9);
     assertEquals(0.35, p.indice().pesoVulnerab(), 1e-9);
     assertEquals(5, p.indice().niveles().size());

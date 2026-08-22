@@ -87,6 +87,13 @@ guaita:
     vulnerab:
       peso-poblacion: 0.70
       peso-espacio-protegido: 0.30   # frac_espacio_protegido; Columbretes EXCLUIDAS
+      # Normalización de la población (0..1 sobre el máximo provincial): lineal /
+      # sqrt / log. sqrt es el punto medio: lineal deja 122/135 municipios por
+      # debajo de 0.05 (solo discrimina a la capital); log acerca demasiado un
+      # pueblo de 200 hab a uno de 2.000. sqrt tiene lectura física (el daño
+      # escala con la SUPERFICIE urbanizada expuesta, sublineal en población).
+      # Parametrizable para que la calibración de Fase 4 lo pueda probar.
+      norma-poblacion: sqrt
 
     # --- índice compuesto (docs/04 §4) ---
     # indice = comp_meteo^0.5 * (peso-estructural*comp_estructural
