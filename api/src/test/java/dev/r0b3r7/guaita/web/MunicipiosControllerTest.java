@@ -35,7 +35,10 @@ class MunicipiosControllerTest {
   void sembrar() {
     for (String t :
         new String[] {
-          "indice_peligro", "fwi_municipio", "meteo_municipio", "estructural_municipio",
+          "indice_peligro",
+          "fwi_municipio",
+          "meteo_municipio",
+          "estructural_municipio",
           "vulnerab_municipio"
         }) {
       jdbc.update("delete from " + t + " where ine_code = ?", INE);

@@ -33,8 +33,7 @@ class MetodologiaController {
       "https://github.com/R0b3r7DEV/guaita/blob/main/docs/04-indice-peligro.md";
 
   /** Pesos vigentes del índice y sus componentes. */
-  record Pesos(
-      double estructural, double vulnerab, double poblacion, double espacioProtegido) {}
+  record Pesos(double estructural, double vulnerab, double poblacion, double espacioProtegido) {}
 
   /** Respuesta de {@code /metodologia}. */
   record Metodologia(
