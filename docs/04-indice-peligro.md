@@ -353,6 +353,15 @@ de configuración, no incrustada en el código.
 > entrando en su ventana de máximo peligro). Documentado para no venderlo como
 > cubierto.
 
+> **CAVEAT del top-10 sin EFFIS (Fase 3).** Las semillas registran el perímetro
+> del incendio de julio de 2026 SOLO bajo la Vall d'Uixó, así que solo ese término
+> ve su `f_tiempo` caer a 0.15. Municipios de la Serra d'Espadán que ardieron en
+> ESE MISMO incendio (Suera, Eslida, Chóvar, Alfondeguilla…) siguen con
+> `f_tiempo = 1.00` y por eso encabezan el ranking del día. **No leer ese top-10
+> como definitivo**: cuando EFFIS aporte el perímetro real, esos municipios caerán
+> igual que cayó la Vall d'Uixó (de índice ~63 hacia ~30). Es una limitación del
+> dato semilla, no del modelo.
+
 ### Combinación estructural
 
 ```

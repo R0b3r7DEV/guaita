@@ -18,4 +18,22 @@ class ApiExceptionHandler {
     pd.setTitle("Parámetros inválidos");
     return pd;
   }
+
+  @ExceptionHandler(RecursoNoEncontradoException.class)
+  ProblemDetail noEncontrado(RecursoNoEncontradoException ex) {
+    ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+    pd.setTitle("No encontrado");
+    return pd;
+  }
+
+  @ExceptionHandler(IndiceObsoletoException.class)
+  ProblemDetail obsoleto(IndiceObsoletoException ex) {
+    ProblemDetail pd =
+        ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
+    pd.setTitle("Índice obsoleto");
+    pd.setProperty("obsoleto", true);
+    pd.setProperty("ultimaFecha", ex.ultimaFecha);
+    pd.setProperty("aviso", Avisos.EMERGENCIAS);
+    return pd;
+  }
 }
