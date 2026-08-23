@@ -58,9 +58,9 @@ public final class Backtest {
   }
 
   /**
-   * AUC-PR como precisión media (average precision): área bajo la curva
-   * precisión-recall recorriendo las puntuaciones de mayor a menor. La referencia
-   * "aleatoria" es la prevalencia (nPos/n), no 0.5.
+   * AUC-PR como precisión media (average precision): área bajo la curva precisión-recall
+   * recorriendo las puntuaciones de mayor a menor. La referencia "aleatoria" es la prevalencia
+   * (nPos/n), no 0.5.
    */
   public static double aucPr(double[] score, boolean[] positivo) {
     int n = score.length;
@@ -110,9 +110,8 @@ public final class Backtest {
   }
 
   /**
-   * Tasa de falsa alarma a un umbral: días marcados sin incendio / total de marcados
-   * (docs/09). Se reporta, no se optimiza a ciegas: los falsos positivos son baratos y los
-   * negativos, caros.
+   * Tasa de falsa alarma a un umbral: días marcados sin incendio / total de marcados (docs/09). Se
+   * reporta, no se optimiza a ciegas: los falsos positivos son baratos y los negativos, caros.
    */
   public static double tasaFalsaAlarma(double[] score, boolean[] positivo, double umbral) {
     long marcados = 0;

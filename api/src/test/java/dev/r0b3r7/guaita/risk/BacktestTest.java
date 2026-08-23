@@ -48,8 +48,7 @@ class BacktestTest {
   void aucPrValorConocido() {
     // desc: T(prec1,rec.5), F, T(prec2/3,rec1), F -> AP = 0.5*1 + 0.5*(2/3) = 0.8333…
     double ap =
-        Backtest.aucPr(
-            new double[] {0.9, 0.8, 0.7, 0.6}, new boolean[] {true, false, true, false});
+        Backtest.aucPr(new double[] {0.9, 0.8, 0.7, 0.6}, new boolean[] {true, false, true, false});
     assertEquals(0.5 + 0.5 * (2.0 / 3.0), ap, 1e-9);
   }
 
