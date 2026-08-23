@@ -221,13 +221,27 @@ montaje que quedó no es el que se preveía (Apache); documentado tal cual es:
   **`127.0.0.1`** (loopback, cerrados a Internet) y el frontend corre en
   **`network_mode: host`** para alcanzarlos ahí. El bind se controla por `.env`
   (`DB_BIND`/`API_BIND`/`WEB_BIND`).
-- **TLS**: cert dedicado de Let's Encrypt para `guaita.xpl0day.com` emitido por
-  **DNS-01** (`certbot certonly --manual --preferred-challenges dns`), en
-  `/etc/letsencrypt/live/guaita.xpl0day.com/` (el contenedor lo ve por el montaje
-  `/etc/letsencrypt:ro`). **Renovación manual** (caduca ~90 días); pendiente
-  automatizar con el plugin `certbot-dns-ionos`. Cabeceras de seguridad en el
-  server block (CSP con las excepciones de MapLibre: `worker-src blob:`, etc.),
-  `limit_req` para las teselas (T4), CORS innecesario (visor y API mismo origen).
+- **TLS + renovación automática (DNS-01 con IONOS)**: cert dedicado de Let's
+  Encrypt para `guaita.xpl0day.com` en `/etc/letsencrypt/live/guaita.xpl0day.com/`
+  (el contenedor lo ve por el montaje `/etc/letsencrypt:ro`). El challenge es
+  **DNS-01** vía el plugin `certbot-dns-ionos`, que crea el TXT `_acme-challenge`
+  por la **API de DNS de IONOS** — no necesita el `:80` (que tiene el contenedor).
+  - El plugin exige `certbot ≥ 3`, incompatible con el `certbot 2.9` de apt (choca
+    con el `josepy` de Debian). Solución: **venv aislado en `/opt/certbot-ionos/`**
+    (`certbot` + `certbot-dns-ionos`), sin tocar el certbot del sistema.
+  - Credenciales en `/etc/letsencrypt/ionos.ini` (chmod 600; `dns_ionos_prefix` /
+    `dns_ionos_secret`, endpoint `api.hosting.ionos.com`).
+  - **Auto-renovación**: override de systemd
+    `/etc/systemd/system/certbot.service.d/venv.conf` apunta el `certbot.timer` al
+    binario del venv; cada cert lleva `--deploy-hook 'docker exec
+    xpl0day-frontend-1 nginx -s reload'` para recargar el frontend tras renovar.
+  - **Comprobar que sigue vivo**: `sudo /opt/certbot-ionos/bin/certbot renew
+    --dry-run` (debe decir "all simulations succeeded") y `... certbot certificates`
+    (fechas futuras). Verificado para guaita **y** xpl0day (este último estaba
+    caducado desde julio: se arregló de paso por la misma vía).
+  - Cabeceras de seguridad en el server block (CSP con las excepciones de MapLibre:
+    `worker-src blob:`, etc.), `limit_req` para las teselas (T4), CORS innecesario
+    (visor y API mismo origen).
 - **Cómo revertir** (si el frontend rompe XPL0DAY): en `~/xpl0day`,
   `cp docker-compose.yml.bak docker-compose.yml && cp nginx/default.conf.bak
   nginx/default.conf && sudo docker compose up -d --build`. Backup completo de la
@@ -241,9 +255,17 @@ Backup de PostgreSQL con `pg_dump -Fc` — el geodato estático se reconstruye c
 `make seed`, pero el backfill de FWI (días de descarga) y los índices calculados
 no; hay que preservarlos.
 
-**Nota (deuda ajena a GUAITA):** el cert de `xpl0day.com`/`practicas` está
-caducado y su certbot no renueva (intenta ocupar `:80`, que tiene el contenedor).
-Es previo a GUAITA; queda anotado por si se aborda.
+**Reglas iptables retiradas:** durante el diagnóstico del despliegue se probaron
+reglas `INPUT -i docker0 --dport 5173/8080 ACCEPT` para intentar que el frontend
+(daemon root) alcanzara los contenedores rootless por el bridge. NO funcionó (el
+forwarder rootless no acepta tráfico del bridge, ni con `builtin` ni
+`slirp4netns`), y se resolvió con loopback + `network_mode: host`. Las reglas se
+**retiraron** por no dejar ruido inexplicable; no eran necesarias.
+
+**Deuda ajena a GUAITA, ya resuelta de paso:** el cert de `xpl0day.com` estaba
+caducado (desde julio) porque su certbot chocaba con el `:80` del contenedor. Al
+automatizar la renovación por DNS-01 (arriba) se re-emitió y quedó auto-renovando.
+El subdominio `practicas` se eliminó y su cert se borró de certbot.
 
 ## Limitación operativa — estado y CI
 
