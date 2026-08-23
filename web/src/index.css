@@ -347,3 +347,19 @@ body {
   margin-top: 0.6rem;
   color: var(--accent);
 }
+
+/* Aviso: dos párrafos (emergencias + desfase temporal del índice). */
+.disclaimer p {
+  margin: 0;
+}
+.disclaimer p + p {
+  margin-top: 0.35rem;
+}
+.disclaimer-desfase {
+  font-size: 0.85rem;
+  opacity: 0.92;
+}
+.disclaimer a {
+  color: #ffe4dc;
+  text-decoration: underline;
+}

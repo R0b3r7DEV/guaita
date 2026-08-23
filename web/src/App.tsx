@@ -17,9 +17,23 @@ function App() {
   return (
     <div className="app">
       <aside className="disclaimer" role="note" aria-label="Aviso importante">
-        <strong>GUAITA no es un sistema de emergencias.</strong> No sustituye al 112 ni al boletín
-        oficial PREVIFOC de la Generalitat Valenciana. Herramienta analítica de portafolio: el índice
-        no es oficial. Ante un incendio, llame al <strong>112</strong>.
+        <p>
+          <strong>GUAITA no es un sistema de emergencias.</strong> No sustituye al 112 ni al boletín
+          oficial PREVIFOC de la Generalitat Valenciana. Herramienta analítica de portafolio: el
+          índice no es oficial. Ante un incendio, llame al <strong>112</strong>.
+        </p>
+        <p className="disclaimer-desfase">
+          Índice <strong>analítico</strong> basado en reanálisis meteorológico, con unos <strong>5
+          días de desfase</strong>. Para el nivel de riesgo <strong>actual</strong>, consulte el{" "}
+          <a
+            href="https://www.112cv.gva.es/es/incendios-forestales"
+            target="_blank"
+            rel="noreferrer"
+          >
+            boletín de preemergencia por incendios de la Generalitat Valenciana (112 CV)
+          </a>
+          .
+        </p>
       </aside>
 
       <div className="map-wrap">

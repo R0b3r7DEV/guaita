@@ -121,6 +121,24 @@ interiores cálidos y costa arriba, montaña del Maestrat/Ports abajo).
 
 ---
 
+## Fase 3.5 · Rama de previsión (FUTURA, opcional)
+
+El índice es analítico: usa reanálisis (ERA5) con ~5 días de desfase. Para acercar
+el visor al "hoy" sin mentir, una rama de **previsión** sobre la API *forecast* de
+Open-Meteo, partiendo del **último estado real del FWI** y proyectando los códigos
+recursivos hacia delante.
+
+**Reglas innegociables si se hace:**
+- Marcada SIEMPRE como **estimación/previsión** en la UI, distinta del dato analítico.
+- **NUNCA se persiste en `indice_peligro`.** Esa tabla es solo observado (reanálisis).
+  Mezclar observado con previsto rompería el backtest de Fase 4 **en silencio** (el
+  histórico dejaría de ser reproducible y la validación mediría contra datos que no
+  ocurrieron). La previsión vive en su propio camino efímero, no en el histórico.
+- El boletín oficial de preemergencia (112 CV / PREVIFOC) sigue siendo la referencia
+  de riesgo actual; la previsión de GUAITA no lo sustituye.
+
+---
+
 ## Fase 4 · Validación (semana 8)
 
 Ver `docs/09-validacion.md`. No es opcional: es lo que separa esto de un
