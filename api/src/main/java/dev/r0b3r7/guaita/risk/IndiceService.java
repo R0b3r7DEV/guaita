@@ -346,9 +346,10 @@ public class IndiceService {
     Map<String, List<LocalDate>> out = new HashMap<>();
     jdbc.query(
         Q_FUEGOS,
-        (java.sql.ResultSet rs) ->
-            out.computeIfAbsent(rs.getString("ine_code"), k -> new ArrayList<>())
-                .add(rs.getObject("fecha_inicio", LocalDate.class)),
+        (java.sql.ResultSet rs) -> {
+          out.computeIfAbsent(rs.getString("ine_code"), k -> new ArrayList<>())
+              .add(rs.getObject("fecha_inicio", LocalDate.class));
+        },
         reparto);
     return out;
   }
