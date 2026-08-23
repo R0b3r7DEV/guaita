@@ -41,16 +41,17 @@ public final class Regeneracion {
   }
 
   /**
-   * Años completos desde el incendio más reciente en o antes de {@code referencia}, o vacío si no
-   * hay ninguno. {@code incendios} son las fechas de inicio de los incendios que YA cualifican para
-   * el municipio (filtrados por el umbral de reparto). Es por municipio Y fecha: el mismo término
-   * da distinto según la fecha de referencia.
+   * Años completos desde el incendio más reciente ESTRICTAMENTE anterior a {@code referencia}, o
+   * vacío si no hay ninguno. El día del propio incendio aún cuenta con combustible (el reset de
+   * f_tiempo empieza al día SIGUIENTE): así el índice NO se hunde el mismo día del fuego, lo que
+   * sería un artefacto de cara al backtest. Es por municipio Y fecha; {@code incendios} son las
+   * fechas de inicio ya filtradas por el umbral de reparto.
    */
   public static OptionalInt aniosDesdeUltimoIncendio(
       LocalDate referencia, List<LocalDate> incendios) {
     LocalDate ultimo = null;
     for (LocalDate f : incendios) {
-      if (!f.isAfter(referencia) && (ultimo == null || f.isAfter(ultimo))) {
+      if (f.isBefore(referencia) && (ultimo == null || f.isAfter(ultimo))) {
         ultimo = f;
       }
     }

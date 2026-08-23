@@ -50,6 +50,16 @@ class RegeneracionTest {
   }
 
   @Test
+  void elDiaDelIncendioAunTieneCombustible() {
+    LocalDate fuego = LocalDate.parse("2026-07-25");
+    List<LocalDate> incendios = List.of(fuego);
+    // el mismo día del fuego NO cuenta como quemado (combustible intacto) -> vacío
+    assertFalse(Regeneracion.aniosDesdeUltimoIncendio(fuego, incendios).isPresent());
+    // al día siguiente ya son 0 años desde el incendio
+    assertEquals(0, Regeneracion.aniosDesdeUltimoIncendio(fuego.plusDays(1), incendios).getAsInt());
+  }
+
+  @Test
   void sinIncendiosOSoloFuturosDaVacio() {
     assertFalse(
         Regeneracion.aniosDesdeUltimoIncendio(LocalDate.parse("2026-01-01"), List.of())
