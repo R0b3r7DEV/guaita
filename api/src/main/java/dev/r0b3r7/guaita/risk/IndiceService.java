@@ -176,7 +176,8 @@ public class IndiceService {
       double compVulnerab = num(f, "cv");
       boolean r303030 = Boolean.TRUE.equals(f.get("r303030"));
 
-      double indice = Indice.calcular(compMeteo, compEstructural, compVulnerab, params.indice());
+      double indice =
+          round2(Indice.calcular(compMeteo, compEstructural, compVulnerab, params.indice()));
       int nivel = Indice.nivel(indice, params.indice().niveles());
 
       jdbc.update(
@@ -224,6 +225,12 @@ public class IndiceService {
 
   private static double num(Map<String, Object> row, String col) {
     return ((Number) row.get(col)).doubleValue();
+  }
+
+  // El índice se persiste como numeric(5,2); se redondea a 2 decimales ANTES de derivar el nivel
+  // para que nivel y valor mostrado sean coherentes en el borde (p.ej. 20.003 -> 20.00 -> nivel 1).
+  private static double round2(double v) {
+    return Math.round(v * 100.0) / 100.0;
   }
 
   /**
@@ -300,7 +307,8 @@ public class IndiceService {
                   ? Regeneracion.fTiempo(anios.getAsInt(), cfgT)
                   : cfgT.sinDatoValor();
           double compEstructural = Math.min(100.0, Math.max(0.0, parteEstatica * ft));
-          double indice = Indice.calcular(compMeteo, compEstructural, compVulnerab, cfgI);
+          double indice =
+              round2(Indice.calcular(compMeteo, compEstructural, compVulnerab, cfgI));
           int nivel = Indice.nivel(indice, cfgI.niveles());
           boolean r303030 =
               rs.getDouble("t") >= 30 && rs.getDouble("h") <= 30 && rs.getDouble("v") >= 30;
