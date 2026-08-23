@@ -307,8 +307,7 @@ public class IndiceService {
                   ? Regeneracion.fTiempo(anios.getAsInt(), cfgT)
                   : cfgT.sinDatoValor();
           double compEstructural = Math.min(100.0, Math.max(0.0, parteEstatica * ft));
-          double indice =
-              round2(Indice.calcular(compMeteo, compEstructural, compVulnerab, cfgI));
+          double indice = round2(Indice.calcular(compMeteo, compEstructural, compVulnerab, cfgI));
           int nivel = Indice.nivel(indice, cfgI.niveles());
           boolean r303030 =
               rs.getDouble("t") >= 30 && rs.getDouble("h") <= 30 && rs.getDouble("v") >= 30;
