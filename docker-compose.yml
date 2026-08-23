@@ -10,7 +10,9 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "5432:5432" # expuesto para iteración local; cerrar en producción
+      # BIND vacío = 0.0.0.0 (iteración local). En el VPS, DB_BIND=127.0.0.1: la
+      # cierra a loopback (la API llega a la BD por la red de compose, no por host).
+      - "${DB_BIND:-}5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
@@ -34,7 +36,9 @@ services:
       AEMET_API_KEY: ${AEMET_API_KEY}
       JWT_SECRET: ${JWT_SECRET}
     ports:
-      - "8080:8080"
+      # En el VPS, API_BIND=172.17.0.1: la publica SOLO en la puerta del bridge de
+      # Docker (la alcanza el reverse proxy del host, no Internet).
+      - "${API_BIND:-}8080:8080"
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health || exit 1"]
       interval: 10s
@@ -47,7 +51,8 @@ services:
     depends_on:
       - api
     ports:
-      - "5173:80" # casa con la URL documentada del visor (README)
+      # En el VPS, WEB_BIND=172.17.0.1: (igual que la API); local queda en 0.0.0.0.
+      - "${WEB_BIND:-}5173:80" # casa con la URL documentada del visor (README)
     healthcheck:
       # busybox wget (nginx:alpine). IPv4 explícito: `localhost` puede resolver a
       # ::1 y nginx (listen 80) solo escucha IPv4 -> falso unhealthy. Flags

@@ -16,10 +16,9 @@
 # ==========================================================================
 services:
   db:
-    # Puerto del host remapeable: si 5432 lo ocupa otro Postgres (XPL0DAY),
-    # DB_PORT_HOST=5433 y listo. El puerto INTERNO (api->db) sigue siendo 5432.
-    ports:
-      - "${DB_PORT_HOST:-5432}:5432"
+    # El bind del host se fija en el compose base con DB_BIND (en el VPS,
+    # DB_BIND=127.0.0.1: cierra la BD a loopback). Aquí NO se declaran ports:
+    # compose los CONCATENA con los del base y duplicaría el binding.
     restart: unless-stopped
     # 1 GB basta para PostGIS sobre una provincia (~1 GB de datos, ~1 M filas);
     # 1 CPU absorbe los picos de las agregaciones/percentiles del informe sin
@@ -35,8 +34,7 @@ services:
         max-file: "${LOG_MAX_FILE:-3}"
 
   api:
-    ports:
-      - "${API_PORT_HOST:-8080}:8080"
+    # Bind del host vía API_BIND en el compose base (VPS: 172.17.0.1:).
     restart: unless-stopped
     # El backfill parsea en memoria la respuesta horaria de un año para 135
     # localizaciones (JSON de decenas de MB, estimado ~50-70 MB; Jackson lo
@@ -67,8 +65,7 @@ services:
         max-file: "${LOG_MAX_FILE:-3}"
 
   web:
-    ports:
-      - "${WEB_PORT_HOST:-5173}:80"
+    # Bind del host vía WEB_BIND en el compose base (VPS: 172.17.0.1:).
     restart: unless-stopped
     # nginx sirviendo estáticos: mínimo.
     mem_limit: ${WEB_MEM_LIMIT:-256m}
