@@ -17,6 +17,31 @@ de incendios de la provincia.
 
 ---
 
+## Demo pública
+
+**https://guaita.xpl0day.com**
+
+Visor coropleto de los 135 términos de Castellón por **nivel de peligro** (1 Bajo
+→ 5 Extremo). Al clicar un municipio, un panel desglosa los tres componentes del
+índice (meteo, estructural, vulnerabilidad), los códigos FWI del día, la serie de
+30 días y las banderas. La fecha del dato y el aviso de "no es un sistema de
+emergencias" están siempre visibles.
+
+**Limitaciones honestas (también en el propio visor → «Metodología y
+limitaciones»):**
+- **Pesos de combustible sin calibrar** — valores de partida (comportamiento
+  publicado de Anderson); la calibración es la Fase 4.
+- **`f_tiempo` incompleto sin EFFIS** — mientras el WFS de perímetros no es
+  accesible, solo los incendios semilla reducen el combustible; por eso el top-10
+  de hoy está encabezado por municipios de la Serra d'Espadà que ardieron en 2026
+  pero cuyo perímetro real aún no está cargado.
+- **`comp_vulnerab` provisional** — población normalizada (proxy débil: mide gente
+  en casco urbano) + suelo protegido; se sustituye por el módulo IUF en v2.0.
+- El índice se calcula sobre meteo de reanálisis con ~5 días de latencia (no es
+  tiempo real, T7); cada dato va etiquetado con su fecha.
+
+---
+
 ## Por qué
 
 Castellón ha sufrido cuatro eventos graves en cuatro años —Bejís (2022, ~19.000

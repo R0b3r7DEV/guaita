@@ -96,20 +96,28 @@ interiores cálidos y costa arriba, montaña del Maestrat/Ports abajo).
 
 ---
 
-## Fase 3 · Índice compuesto y visor (semanas 6–7)
+## Fase 3 · Índice compuesto y visor (semanas 6–7) — ✅ COMPLETADA (desplegada)
 
-- [ ] Componente estructural: fracción forestal, continuidad, modelo de
+- [x] Componente estructural: fracción forestal, continuidad, modelo de
       combustible, pendiente, `f_tiempo` desde el último incendio.
-- [ ] Componente de vulnerabilidad (versión provisional sin IUF).
-- [ ] Índice compuesto, niveles, banderas `regla303030` y `vientoAlineado`.
-- [ ] Endpoints `/municipios` y `/municipios/{ineCode}`.
-- [ ] Visor coropleto por nivel, panel de detalle, serie de 30 días.
-- [ ] **Aviso permanente de "no es un sistema de emergencia".**
-- [ ] Despliegue en el VPS con HTTPS.
+- [x] Componente de vulnerabilidad (versión provisional sin IUF; población
+      normalizada por sqrt + suelo protegido MITECO).
+- [x] Índice compuesto (media geométrica), niveles 1-5, banderas `regla303030` y
+      `vientoAlineado` (NULL = sin dato, no false).
+- [x] Endpoints `/municipios`, `/municipios/{ineCode}` y `/metodologia`.
+- [x] Visor coropleto por nivel, panel de detalle, serie de 30 días.
+- [x] **Aviso permanente de "no es un sistema de emergencia".**
+- [x] Despliegue en el VPS con HTTPS.
 
-**Criterio:** URL pública funcionando. Ya se puede enseñar. **Aquí el proyecto
-deja de ser una promesa.** Si hubiera que parar por falta de tiempo, este es un
-punto de parada digno.
+**Criterio CUMPLIDO: URL pública funcionando → https://guaita.xpl0day.com**
+(HTTPS válido, HTTP→HTTPS, cabeceras de seguridad, teselas y visor sirviendo).
+
+> **Limitaciones conocidas visibles (docs/04, /metodologia):** pesos de
+> combustible sin calibrar (Fase 4); `f_tiempo` incompleto sin los perímetros de
+> EFFIS (solo las semillas reducen combustible; el top-10 de Espadán caerá cuando
+> llegue el perímetro real); `comp_vulnerab` provisional (población es un proxy
+> débil hasta el módulo IUF de v2.0). El backfill histórico del índice (para el
+> visor temporal y el backtest de Fase 4) es el paso siguiente.
 
 ---
 

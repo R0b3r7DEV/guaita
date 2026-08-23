@@ -39,7 +39,7 @@
                     │ api/web  REST   │
                     │ + api/alerts    │
                     └────────┬────────┘
-                             │  HTTPS (Apache reverse proxy)
+                             │  HTTPS (nginx reverse proxy, contenedor frontend)
                     ┌────────▼────────┐
                     │ web/ React+Vite │
                     │ MapLibre GL     │
@@ -206,11 +206,44 @@ repositorios ajenos. `wui` no toca las tablas de `risk`.
 
 ## Despliegue
 
-VPS con Apache delante como reverse proxy (ya en uso para XPL0DAY). Compose
-levanta `db`, `api`, `web` (nginx sirviendo el build estático de Vite).
-Certificados por Let's Encrypt. Backup diario de PostgreSQL con `pg_dump`
-comprimido y rotación a 7 días — el geodato estático se puede reconstruir con
-`make seed`, pero los índices históricos calculados no.
+**Producción real (guaita.xpl0day.com).** El VPS comparte máquina con XPL0DAY. El
+montaje que quedó no es el que se preveía (Apache); documentado tal cual es:
+
+- **Puerta pública = un contenedor nginx propio de XPL0DAY** (`xpl0day-frontend`,
+  daemon Docker de *root*) que ata `:80`/`:443`. No es Apache ni un proxy con
+  auto-TLS. GUAITA se añade como un `server_name guaita.xpl0day.com` en su
+  `nginx/default.conf` (fichero versionado en `ops/nginx-guaita.conf`): proxy `/`
+  → visor y `/api/` → API.
+- **GUAITA corre en Docker ROOTLESS** (usuario `guaita`), un daemon **distinto**
+  del de root. Un contenedor del daemon root **no alcanza** los puertos publicados
+  por el rootless a través del bridge (probado: `builtin` y `slirp4netns` fallan
+  con timeout aunque INPUT los permita). Solución: `db`/`api`/`web` publican en
+  **`127.0.0.1`** (loopback, cerrados a Internet) y el frontend corre en
+  **`network_mode: host`** para alcanzarlos ahí. El bind se controla por `.env`
+  (`DB_BIND`/`API_BIND`/`WEB_BIND`).
+- **TLS**: cert dedicado de Let's Encrypt para `guaita.xpl0day.com` emitido por
+  **DNS-01** (`certbot certonly --manual --preferred-challenges dns`), en
+  `/etc/letsencrypt/live/guaita.xpl0day.com/` (el contenedor lo ve por el montaje
+  `/etc/letsencrypt:ro`). **Renovación manual** (caduca ~90 días); pendiente
+  automatizar con el plugin `certbot-dns-ionos`. Cabeceras de seguridad en el
+  server block (CSP con las excepciones de MapLibre: `worker-src blob:`, etc.),
+  `limit_req` para las teselas (T4), CORS innecesario (visor y API mismo origen).
+- **Cómo revertir** (si el frontend rompe XPL0DAY): en `~/xpl0day`,
+  `cp docker-compose.yml.bak docker-compose.yml && cp nginx/default.conf.bak
+  nginx/default.conf && sudo docker compose up -d --build`. Backup completo de la
+  config web en `/root/webconf-backup-*.tar.gz`. **Salvaguarda de despliegue**:
+  `sudo docker compose run --rm --entrypoint nginx frontend -t` valida la config
+  ANTES de recrear; si falla, XPL0DAY sigue intacto.
+- **Durabilidad**: `loginctl enable-linger guaita` (el rootless arranca en boot) +
+  `restart: unless-stopped` en los tres contenedores ⇒ GUAITA revive tras reinicio.
+
+Backup de PostgreSQL con `pg_dump -Fc` — el geodato estático se reconstruye con
+`make seed`, pero el backfill de FWI (días de descarga) y los índices calculados
+no; hay que preservarlos.
+
+**Nota (deuda ajena a GUAITA):** el cert de `xpl0day.com`/`practicas` está
+caducado y su certbot no renueva (intenta ocupar `:80`, que tiene el contenedor).
+Es previo a GUAITA; queda anotado por si se aborda.
 
 ## Limitación operativa — estado y CI
 
