@@ -163,6 +163,91 @@ public final class Backtest {
     return new double[] {percentil(validas, alpha / 2), percentil(validas, 1 - alpha / 2)};
   }
 
+  /**
+   * AUC-ROC a partir de arrays SEPARADOS de positivos y negativos (equivale a {@link #aucRoc} pero
+   * ordena solo los negativos una vez; rápido cuando hay cientos de miles de negativos). Empates:
+   * medio acierto.
+   */
+  public static double aucRocSep(double[] pos, double[] neg) {
+    if (pos.length == 0 || neg.length == 0) {
+      throw new IllegalArgumentException("el AUC necesita positivos y negativos");
+    }
+    double[] n = neg.clone();
+    Arrays.sort(n);
+    double suma = 0;
+    for (double p : pos) {
+      suma += colocacion(p, n);
+    }
+    return suma / pos.length;
+  }
+
+  /**
+   * AUC-ROC puntual + IC por bootstrap de los VALORES DE COLOCACIÓN de los positivos (docs/09): con
+   * pocos positivos y muchos negativos, la incertidumbre la dominan los positivos, así que se
+   * remuestrean ellos (los negativos, fijos). Devuelve {@code [auc, lo, hi]} a (1-alpha).
+   */
+  public static double[] aucRocIc(
+      double[] pos, double[] neg, int nBoot, long semilla, double alpha) {
+    if (pos.length == 0 || neg.length == 0) {
+      throw new IllegalArgumentException("el AUC necesita positivos y negativos");
+    }
+    double[] n = neg.clone();
+    Arrays.sort(n);
+    double[] u = new double[pos.length];
+    double suma = 0;
+    for (int i = 0; i < pos.length; i++) {
+      u[i] = colocacion(pos[i], n);
+      suma += u[i];
+    }
+    double auc = suma / u.length;
+    Random rnd = new Random(semilla);
+    double[] rep = new double[nBoot];
+    for (int b = 0; b < nBoot; b++) {
+      double s = 0;
+      for (int i = 0; i < u.length; i++) {
+        s += u[rnd.nextInt(u.length)];
+      }
+      rep[b] = s / u.length;
+    }
+    Arrays.sort(rep);
+    return new double[] {auc, percentil(rep, alpha / 2), percentil(rep, 1 - alpha / 2)};
+  }
+
+  // Valor de colocación de un positivo: (#neg < p + 0.5·#neg = p) / nNeg, con búsqueda binaria.
+  private static double colocacion(double p, double[] negOrdenado) {
+    int menores = limiteInferior(negOrdenado, p);
+    int iguales = limiteSuperior(negOrdenado, p) - menores;
+    return (menores + 0.5 * iguales) / negOrdenado.length;
+  }
+
+  private static int limiteInferior(double[] a, double x) {
+    int lo = 0;
+    int hi = a.length;
+    while (lo < hi) {
+      int m = (lo + hi) >>> 1;
+      if (a[m] < x) {
+        lo = m + 1;
+      } else {
+        hi = m;
+      }
+    }
+    return lo;
+  }
+
+  private static int limiteSuperior(double[] a, double x) {
+    int lo = 0;
+    int hi = a.length;
+    while (lo < hi) {
+      int m = (lo + hi) >>> 1;
+      if (a[m] <= x) {
+        lo = m + 1;
+      } else {
+        hi = m;
+      }
+    }
+    return lo;
+  }
+
   private static double percentil(double[] ordenado, double q) {
     if (ordenado.length == 1) {
       return ordenado[0];

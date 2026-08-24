@@ -88,6 +88,25 @@ class BacktestTest {
   }
 
   @Test
+  void aucRocSepCoincideConAucRoc() {
+    // mismos datos que el caso 0.75, en arrays separados
+    assertEquals(0.75, Backtest.aucRocSep(new double[] {2, 4}, new double[] {1, 3}), 1e-9);
+    // separación perfecta y empate total
+    assertEquals(1.0, Backtest.aucRocSep(new double[] {3, 4}, new double[] {1, 2}), 1e-9);
+    assertEquals(0.5, Backtest.aucRocSep(new double[] {5, 5}, new double[] {5, 5}), 1e-9);
+  }
+
+  @Test
+  void aucRocIcPuntualYEnvoltura() {
+    double[] pos = {55, 62, 80};
+    double[] neg = {10, 20, 30, 40, 50, 60, 70};
+    double[] r = Backtest.aucRocIc(pos, neg, 500, 3L, 0.05);
+    assertEquals(Backtest.aucRocSep(pos, neg), r[0], 1e-9); // r[0] es el AUC puntual
+    assertTrue(r[1] <= r[0] && r[0] <= r[2], "el IC debe envolver el puntual");
+    assertTrue(r[1] >= 0.0 && r[2] <= 1.0);
+  }
+
+  @Test
   void bootstrapConPocosPositivosDaIcAncho() {
     // 3 positivos, muchos negativos: el IC debe salir ANCHO (la señal de docs/09)
     int n = 200;
