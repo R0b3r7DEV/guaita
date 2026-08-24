@@ -11,8 +11,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * Backtest del modelo ACTUAL sin calibrar (docs/09). Gatillado por {@code
- * guaita.backtest.run=true}. Corte 2005-2015 (calibración) / 2016-2022 (validación). Imprime AUC-ROC
- * con IC 95%, AUC-PR y el recuento de positivos/negativos para el compuesto, las líneas base y las
+ * guaita.backtest.run=true}. Corte 2005-2015 (calibración) / 2016-2022 (validación). Imprime
+ * AUC-ROC con IC 95%, AUC-PR y el recuento de positivos para el compuesto, las líneas base y las
  * ablaciones, más la sensibilidad y la falsa alarma a nivel ≥ 4. NO fija pesos: la foto de partida.
  */
 @Component
@@ -34,42 +34,42 @@ class BacktestRunner implements ApplicationRunner {
     if (!run) {
       return;
     }
-    log.info(
-        "backtest del modelo actual (sin calibrar); corte calib≤{} / valid>{} …", CORTE, CORTE);
+    log.info("backtest del modelo actual (sin calibrar); corte calib<={} …", CORTE);
     List<BacktestService.Metrica>[] res = service.ejecutar(CORTE);
-    tabla("CALIBRACIÓN 2005-" + CORTE, res[0]);
-    tabla("VALIDACIÓN " + (CORTE + 1) + "-2022", res[1]);
+    tabla("CALIBRACION 2005-" + CORTE, res[0]);
+    tabla("VALIDACION " + (CORTE + 1) + "-2022", res[1]);
 
     double[] sc = service.sensYFalsaAlarma(CORTE, false);
     double[] sv = service.sensYFalsaAlarma(CORTE, true);
     log.info(
-        String.format(
-            Locale.ROOT,
-            "compuesto sens@nivel≥4: calib=%.2f (%.0f pos) valid=%.2f (%.0f pos)",
-            sc[0], sc[2], sv[0], sv[2]));
-    log.info(
-        String.format(
-            Locale.ROOT,
-            "compuesto falsa alarma@nivel≥4: calib=%.3f valid=%.3f", sc[1], sv[1]));
+        "compuesto sens@nivel>=4: calib={} ({} pos)  valid={} ({} pos)",
+        p3(sc[0]),
+        (long) sc[2],
+        p3(sv[0]),
+        (long) sv[2]);
+    log.info("compuesto falsa alarma@nivel>=4: calib={} valid={}", p3(sc[1]), p3(sv[1]));
     System.exit(0);
   }
 
   private void tabla(String periodo, List<BacktestService.Metrica> ms) {
     log.info("== {} ==", periodo);
-    log.info(
-        String.format(Locale.ROOT, "  %-26s %8s %-18s %8s %6s", "variante", "AUC", "IC95", "AUC-PR",
-            "nPos"));
     for (BacktestService.Metrica m : ms) {
       log.info(
-          String.format(
-              Locale.ROOT,
-              "  %-26s %8.3f [%.3f,%.3f] %8.3f %6d",
-              m.variante(),
-              m.auc(),
-              m.aucLo(),
-              m.aucHi(),
-              m.aucPr(),
-              m.nPos()));
+          "  {} AUC={} IC95=[{}, {}] AUC-PR={} nPos={}",
+          pad(m.variante()),
+          p3(m.auc()),
+          p3(m.aucLo()),
+          p3(m.aucHi()),
+          p3(m.aucPr()),
+          m.nPos());
     }
+  }
+
+  private static String p3(double v) {
+    return String.format(Locale.ROOT, "%.3f", v);
+  }
+
+  private static String pad(String s) {
+    return String.format("%-26s", s);
   }
 }
