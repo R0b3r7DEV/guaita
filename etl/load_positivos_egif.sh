@@ -30,12 +30,11 @@ insert into egif_incendio
 select s.numeroparte,
   coalesce(
     case when s.idmun between 1 and 899 then '12' || lpad(s.idmun::text, 3, '0') end,
-    (select m.ine_code from municipio m
-     where s.lat is not null and s.lat <> ''
-       and st_contains(
-             m.geom,
-             st_transform(st_setsrid(st_makepoint(s.lon::float8, s.lat::float8), 4326), 25830))
-     limit 1)
+    case when s.lat is not null and s.lat <> '' then
+      (select m.ine_code from municipio m
+       order by m.geom <-> st_transform(
+         st_setsrid(st_makepoint(s.lon::float8, s.lat::float8), 4326), 25830)
+       limit 1) end
   ) as ine_inicio,
   s.fecha, s.fecha_fin, s.superficie_ha, s.nmun,
   case when s.lat is not null and s.lat <> '' then
