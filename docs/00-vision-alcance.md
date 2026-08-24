@@ -2,10 +2,11 @@
 
 ## El problema
 
-Castellón ha sufrido cuatro eventos graves en cuatro años: Bejís (agosto 2022,
-~19.000 ha, once términos), Costur–Les Useres–Figueroles–Llucena (agosto 2022,
-800 ha), Villanueva de Viver (marzo 2023, 4.700 ha) y la Serra d'Espadà (julio
-2026, en curso).
+Castellón sufre grandes incendios recurrentes: les Useres (agosto 2007, 5.775 ha),
+Bejís (agosto 2022, **16.836 ha forestales** según el EGIF —la cifra de ~19.000 que
+citó la prensa incluye superficie no forestal—, doce términos), Villanueva de Viver
+(marzo 2023, 4.700 ha) y la Serra d'Espadà (julio 2026, en curso). (Cifras y fechas
+del EGIF/MITECO; ver docs/09.)
 
 Mientras tanto, los planes de prevención de incendios forestales de demarcación
 (PPIFDF) — que según el art. 47 del Decreto 91/2023 constituyen el desarrollo

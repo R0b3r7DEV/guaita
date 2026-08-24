@@ -232,12 +232,18 @@ Semilla obligatoria de `incendio_historico` (es el conjunto de test del backtest
 
 | nombre | fecha_inicio | superficie_ha | causa |
 |---|---|---|---|
-| Bejís | 2022-08-15 | ~19.000 | rayo |
-| Useres–Costur–Figueroles–Llucena | 2022-08-15 | 800 | — |
+| Bejís | 2022-08-15 | 16.836 (forestal, EGIF) | rayo |
+| les Useres | 2007-08-28 | 5.775 | — |
+| Costur | 2022-08-14 | 728 | — |
 | Villanueva de Viver | 2023-03-23 | 4.700 | — |
 | Serra d'Espadà (Vall d'Uixó) | 2026-07-25 | por determinar | en investigación |
 
-Rellenar con el histórico largo desde EFFIS antes de dar el backtest por válido:
+> Corregido con datos del EGIF/MITECO (docs/09): lo que se había apuntado a mano
+> como "Useres–Costur–Figueroles–Llucena, 2022-08-15, 800 ha" era en realidad **les
+> Useres 2007 (5.775 ha)** más un **Costur pequeño del 14-ago-2022 (728 ha)**.
+
+El histórico largo de positivos ya está cargado desde el **EGIF** (`egif_incendio`,
+V14), no desde EFFIS (cuyo WFS sigue caído y solo se necesita para los perímetros):
 4 eventos son pocos. Objetivo mínimo: 20 años de área quemada de la provincia.
 
 ## Interfaz urbano-forestal

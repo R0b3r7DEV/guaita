@@ -26,6 +26,46 @@ cientos de positivos frente a cientos de miles de negativos.
 la *accuracy* es una métrica inútil. Un modelo que diga siempre "no arde" acierta
 el 99,9 %.
 
+### Estado real de los positivos (EGIF cargado, 2026)
+
+El WFS de EFFIS sigue caído, pero los positivos **no necesitan perímetros**: solo
+(municipio, fecha, superficie). Fuente: **EGIF/MITECO** (herramienta oficial de
+partes de incendio), cargada en `egif_incendio` (V14, `etl/load_positivos_egif.sh`).
+
+- **26 incendios ≥ 100 ha en Castellón, 2005-2022** (el EGIF consolidado va con
+  ~2 años de retraso; 2023-2026 aún no están). 25 mapean a su término de inicio por
+  `idmunicipio`; el parte multi-término `12999` (fuego de 2012, 10.613 ha, el 2º
+  mayor) se recupera por sus **coordenadas** de inicio (punto en municipio).
+- **Superficie autoritativa = la FORESTAL del EGIF.** Bejís 2022 = **16.836 ha**
+  (arbolada + no arbolada), NO los ~19.000 de prensa (que incluyen agrícola/total).
+  La discrepancia se anota, no se esconde.
+- **Corrección de un error de las semillas iniciales:** el supuesto "clúster de
+  l'Alcalatén 2022" (que se había puesto a mano como les Useres/Costur/Figueroles/
+  Llucena el 15-ago-2022) era en realidad **les Useres 2007 (5.775 ha)** más un
+  **Costur pequeño el 14-ago-2022 (728 ha)**. El dato oficial manda; las 4 semillas
+  aproximadas quedan superadas por el EGIF para el backtest.
+
+### Corrección de método: un parte NO es un municipio
+
+El EGIF da un parte por incendio con el **término de inicio** + la superficie total;
+los municipios afectados (Bejís marcó 12) NO vienen enumerados. Construir los pares
+como (término de inicio, fecha) metería Jérica, Viver o Torás en los **negativos** el
+día que ardieron con Bejís → contaminación de etiquetas (el modelo se penaliza por
+acertar). Mientras no haya perímetros de EFFIS, se aplica la opción **conservadora**:
+los municipios **vecinos** (`ST_Touches`) del término de inicio, en la ventana
+`[fecha_inicio, fecha_fin]` del incendio, se **excluyen de los negativos** — no se
+cuentan como positivos (no se inventan etiquetas) ni como negativos. Afecta a la
+interpretación de todas las métricas y queda declarado aquí.
+
+### Partición temporal usada
+
+Con 22 positivos en 2005-2018 y solo 3 en 2019-2022, la validación de docs/09
+(2005-2018 / 2019-2025) no diría nada (AUC out-of-sample ±0,30). Se mueve el corte a
+**2005-2015 (calibración) / 2016-2022 (validación)** (~18/7): la calibración pierde
+algo de potencia pero la validación pasa a ser informativa, que es lo que hace
+defendible el resultado. **Se reportan los IC de ambos periodos.** Cuando lleguen los
+positivos 2023-2026 (registro GVA, art. 50 Ley de Montes) la validación mejora.
+
 ## Métricas
 
 | Métrica | Por qué | Objetivo |
