@@ -115,8 +115,8 @@ public class BacktestService {
       (f.pos() ? pos : neg).add(score.applyAsDouble(f));
     }
     if (pos.isEmpty() || neg.isEmpty()) {
-      return new Metrica(nombre, Double.NaN, Double.NaN, Double.NaN, Double.NaN, pos.size(),
-          neg.size());
+      return new Metrica(
+          nombre, Double.NaN, Double.NaN, Double.NaN, Double.NaN, pos.size(), neg.size());
     }
     double[] p = pos.stream().mapToDouble(Double::doubleValue).toArray();
     double[] n = neg.stream().mapToDouble(Double::doubleValue).toArray();
