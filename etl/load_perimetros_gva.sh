@@ -16,13 +16,16 @@ B="http://carto.icv.gva.es/arcgis/rest/services/tm_medio_ambiente/prevencion_de_
 DATA=/data/perim_gva
 PG="PG:host=$PGHOST port=$PGPORT dbname=$PGDATABASE user=$PGUSER password=$PGPASSWORD"
 run_sql() { psql -v ON_ERROR_STOP=1 -q "$@"; }
+# curl con timeout y reintentos: un request colgado no debe tumbar la carga entera.
+fetch() { curl -fsSL --max-time 180 --connect-timeout 20 --retry 4 --retry-delay 5 \
+                --retry-connrefused "$1" -o "$2"; }
 # where prov_nom LIKE '%Castell%' y campos, ya URL-encoded.
 FLDS="NumPIF_Min,anyo,f_detec,nom_mun,prov_nom,sup_f"
 WHERE="prov_nom+LIKE+%27%25Castell%25%27"
 
 mkdir -p "$DATA"
 echo "==> Descargando el catálogo de capas del MapServer…"
-curl -fsSL "$B?f=json" -o "$DATA/service.json"
+fetch "$B?f=json" "$DATA/service.json"
 
 run_sql -c "drop table if exists stg_perim;"
 first=1
@@ -34,7 +37,7 @@ for y in $(seq 2005 2024); do
     continue
   fi
   url="$B/$id/query?where=$WHERE&outFields=$FLDS&outSR=25830&returnGeometry=true&f=geojson&resultRecordCount=5000"
-  curl -fsSL "$url" -o "$DATA/$y.geojson"
+  fetch "$url" "$DATA/$y.geojson"
   n=$(grep -o '"type":"Feature"' "$DATA/$y.geojson" | wc -l)
   echo "   $y (capa $id): $n perímetros"
   if [[ "$n" -eq 0 ]]; then
