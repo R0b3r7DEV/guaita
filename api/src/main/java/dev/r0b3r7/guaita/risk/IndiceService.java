@@ -361,14 +361,14 @@ public class IndiceService {
     if (filas == null || !filas.equals(esperadas)) {
       fallos.add(filas + " filas, esperaba " + esperadas + " (FWI no-calentamiento)");
     }
-    // Ancla de regresión v1.1: la Vall d'Uixó 2026-08-16. Valor fijado tras el primer backfill v1.1
-    // (indice = comp_meteo_abs · modulador; distinto de v1.0). Presencia y rango por ahora.
+    // Ancla de regresión v1.1: la Vall d'Uixó 2026-08-16 = 86.03 (comp_meteo_abs alto de verano ·
+    // modulador estructural). Distinto de v1.0 (51.77) por el cambio de forma, no por bug.
     Double vall =
         jdbc.queryForObject(
             "select indice from indice_peligro where ine_code = '12126' and fecha = '2026-08-16'",
             Double.class);
-    if (vall == null || vall < 0 || vall > 100) {
-      fallos.add("la Vall d'Uixó 2026-08-16 = " + vall + " (fuera de rango o ausente)");
+    if (vall == null || Math.abs(vall - 86.03) > 0.05) {
+      fallos.add("la Vall d'Uixó 2026-08-16 = " + vall + ", esperaba 86.03");
     }
     Integer incoherentes =
         jdbc.queryForObject(

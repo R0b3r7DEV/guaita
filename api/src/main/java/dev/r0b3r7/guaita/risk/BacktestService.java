@@ -114,6 +114,8 @@ public class BacktestService {
 
   private List<Metrica> metricas(List<Fila> filas) {
     List<Metrica> r = new ArrayList<>();
+    // Índice v1.1 REALMENTE producido y almacenado (verificación sobre producción, docs/09).
+    r.add(metrica("indice_v1_1_producido", filas, Fila::indice));
     // Referencias.
     r.add(metrica("baseline_FWI_crudo", filas, Fila::fwi));
     r.add(metrica("baseline_estacional_doy", filas, f -> -Math.abs(f.doy() - 213)));
