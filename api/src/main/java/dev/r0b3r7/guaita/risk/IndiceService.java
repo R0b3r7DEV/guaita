@@ -21,13 +21,15 @@ public class IndiceService {
 
   // Municipios tocados por algún incendio -> última fecha de un incendio que cumple el reparto
   // (perímetro cubre >= umbral de la superficie forestal del término). Solo se calcula la forestal
-  // de los términos tocados; el resto no la necesita (f_tiempo neutro).
+  // de los términos tocados; el resto no la necesita (f_tiempo neutro). Fuente: perimetro_incendio
+  // (perímetros reales ICV/GVA 2005-2024), no las 4 semillas: con las semillas f_tiempo salía 1.00
+  // en casi todo por falta de fuego previo cercano (docs/09).
   private static final String Q_ULTIMO_FUEGO =
       """
       with tocados as (
         select distinct m.ine_code, m.geom mg
         from municipio m
-        join incendio_historico i on i.geom && m.geom and st_intersects(i.geom, m.geom)
+        join perimetro_incendio i on i.geom && m.geom and st_intersects(i.geom, m.geom)
       ),
       mf as (
         select t.ine_code, t.mg,
@@ -37,17 +39,17 @@ public class IndiceService {
         group by t.ine_code, t.mg
       ),
       fm as (
-        select mf.ine_code, i.fecha_inicio,
+        select mf.ine_code, i.fecha,
                coalesce(
                  sum(st_area(st_intersection(st_intersection(i.geom, mf.mg), f.geom))), 0) burned
-        from incendio_historico i
+        from perimetro_incendio i
         join mf on i.geom && mf.mg and st_intersects(i.geom, mf.mg)
         join terreno_forestal f
           on f.geom && i.geom and st_intersects(f.geom, i.geom) and f.geom && mf.mg
-        where i.fecha_inicio <= ?
-        group by mf.ine_code, i.fecha_inicio
+        where i.fecha <= ?
+        group by mf.ine_code, i.fecha
       )
-      select fm.ine_code, max(fm.fecha_inicio) ultimo
+      select fm.ine_code, max(fm.fecha) ultimo
       from fm join mf using (ine_code)
       where mf.fa > 0 and fm.burned >= ? * mf.fa
       group by fm.ine_code
@@ -80,13 +82,14 @@ public class IndiceService {
   // --- Backfill histórico (paso 10): sin red, todo de tablas ya cargadas. ---
 
   // TODAS las fechas de incendio que cumplen el reparto por municipio (sin filtrar por fecha: el
-  // filtrado temporal —solo incendios ANTERIORES a cada día— lo hace Java por fila).
+  // filtrado temporal —solo incendios ANTERIORES a cada día— lo hace Java por fila). Fuente:
+  // perimetro_incendio (perímetros reales ICV/GVA), no las semillas.
   private static final String Q_FUEGOS =
       """
       with tocados as (
         select distinct m.ine_code, m.geom mg
         from municipio m
-        join incendio_historico i on i.geom && m.geom and st_intersects(i.geom, m.geom)
+        join perimetro_incendio i on i.geom && m.geom and st_intersects(i.geom, m.geom)
       ),
       mf as (
         select t.ine_code, t.mg,
@@ -96,16 +99,16 @@ public class IndiceService {
         group by t.ine_code, t.mg
       ),
       fm as (
-        select mf.ine_code, i.fecha_inicio, max(mf.fa) fa,
+        select mf.ine_code, i.fecha, max(mf.fa) fa,
                coalesce(
                  sum(st_area(st_intersection(st_intersection(i.geom, mf.mg), f.geom))), 0) burned
-        from incendio_historico i
+        from perimetro_incendio i
         join mf on i.geom && mf.mg and st_intersects(i.geom, mf.mg)
         join terreno_forestal f
           on f.geom && i.geom and st_intersects(f.geom, i.geom) and f.geom && mf.mg
-        group by mf.ine_code, i.fecha_inicio
+        group by mf.ine_code, i.fecha
       )
-      select ine_code, fecha_inicio from fm where fa > 0 and burned >= ? * fa
+      select ine_code, fecha from fm where fa > 0 and burned >= ? * fa
       """;
 
   // Serie diaria por municipio (sin calentamiento): FWI + meteo para la regla 30-30-30.
@@ -355,7 +358,7 @@ public class IndiceService {
         Q_FUEGOS,
         (java.sql.ResultSet rs) -> {
           out.computeIfAbsent(rs.getString("ine_code"), k -> new ArrayList<>())
-              .add(rs.getObject("fecha_inicio", LocalDate.class));
+              .add(rs.getObject("fecha", LocalDate.class));
         },
         reparto);
     return out;

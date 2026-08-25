@@ -19,7 +19,8 @@ public class BacktestService {
   // Temporada de riesgo marzo-octubre, 2005-2022. Índice + componentes + FWI crudo + temperatura.
   private static final String Q_UNIVERSO =
       """
-      select extract(year from ip.fecha)::int anio, ip.indice, ip.comp_meteo cm,
+      select extract(year from ip.fecha)::int anio, extract(doy from ip.fecha)::int doy,
+             ip.indice, ip.comp_meteo cm,
              ip.comp_estructural ce, ip.comp_vulnerab cv, ip.nivel, f.fwi, m.temp_12utc_c tmax,
              (exists (select 1 from egif_incendio e
                       where e.ine_inicio = ip.ine_code and e.fecha_inicio = ip.fecha)) pos,
@@ -32,15 +33,23 @@ public class BacktestService {
         and extract(year from ip.fecha) between 2005 and 2022
       """;
 
-  // Vecinos (ST_Touches) del término de inicio, por cada día de la ventana del incendio.
+  // Corrección de contaminación de etiquetas (b), con perímetros reales: un parte del EGIF es UN
+  // municipio de inicio, pero el fuego quema varios (Bejís marcó 9). Esos términos afectados —los que
+  // el PERÍMETRO del propio parte cubre con >=10 ha, salvo el de inicio— quedan FUERA de los
+  // negativos durante la ventana del incendio (ni positivos ni negativos): su día de quema no es un
+  // "no pasó nada" honesto. Enlace parte<->perímetro por numpif = numeroparte. Sustituye a la vieja
+  // aproximación por vecindad (ST_Touches), que excluía vecinos aunque no se quemaran.
   private static final String Q_EXCL =
       """
       drop table if exists _excl;
       create temp table _excl as
-      select distinct v.ine_code ine, d::date fecha
+      select distinct m.ine_code ine, d::date fecha
       from egif_incendio e
-      join municipio o on o.ine_code = e.ine_inicio
-      join municipio v on v.ine_code <> o.ine_code and st_touches(v.geom, o.geom)
+      join perimetro_incendio p on p.numpif = e.numeroparte::text
+      join municipio m
+        on m.ine_code <> e.ine_inicio
+       and p.geom && m.geom
+       and st_area(st_intersection(p.geom, m.geom)) >= 100000
       join generate_series(e.fecha_inicio, coalesce(e.fecha_fin, e.fecha_inicio),
                            interval '1 day') d on true;
       create index on _excl (ine, fecha);
@@ -49,6 +58,7 @@ public class BacktestService {
   /** Una fila del universo (un par municipio-día) con sus puntuaciones y etiqueta. */
   private record Fila(
       int anio,
+      int doy,
       double indice,
       double cm,
       double ce,
@@ -82,6 +92,7 @@ public class BacktestService {
           Fila f =
               new Fila(
                   rs.getInt("anio"),
+                  rs.getInt("doy"),
                   rs.getDouble("indice"),
                   rs.getDouble("cm"),
                   rs.getDouble("ce"),
@@ -102,6 +113,10 @@ public class BacktestService {
     r.add(metrica("indice_compuesto", filas, Fila::indice));
     r.add(metrica("baseline_FWI_crudo", filas, Fila::fwi));
     r.add(metrica("baseline_Tmax", filas, Fila::tmax));
+    // Baseline de estacionalidad PURA: solo el calendario, cercanía al pico de la temporada de
+    // incendios (1-ago, doy 213; fijo, NO ajustado a los positivos). Cuantifica cuánto del AUC del
+    // FWI crudo es mera estacionalidad, dado que casi todos los positivos son de verano (docs/09).
+    r.add(metrica("baseline_estacional_doy", filas, f -> -Math.abs(f.doy() - 213)));
     r.add(metrica("ablacion_sin_meteo", filas, f -> 0.65 * f.ce() + 0.35 * f.cv()));
     r.add(metrica("ablacion_sin_estructural", filas, f -> Math.sqrt(f.cm()) * Math.sqrt(f.cv())));
     r.add(metrica("ablacion_sin_vulnerab", filas, f -> Math.sqrt(f.cm()) * Math.sqrt(f.ce())));
