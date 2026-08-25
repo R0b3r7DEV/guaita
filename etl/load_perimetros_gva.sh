@@ -19,9 +19,12 @@ run_sql() { psql -v ON_ERROR_STOP=1 -q "$@"; }
 # curl con timeout y reintentos: un request colgado no debe tumbar la carga entera.
 fetch() { curl -fsSL --max-time 180 --connect-timeout 20 --retry 4 --retry-delay 5 \
                 --retry-connrefused "$1" -o "$2"; }
-# where prov_nom LIKE '%Castell%' y campos, ya URL-encoded.
+# Filtro de provincia y campos, ya URL-encoded. OJO: el valor de prov_nom NO es
+# homogéneo entre capas ("CASTELLON" en mayúsculas 2016-2019, "Castellón/Castelló"
+# desde 2020); un LIKE case-sensitive perdía 2016-2019 EN SILENCIO. UPPER(...) los
+# unifica: 'CASTELLON', 'Castellon' y 'CASTELLÓ' contienen todos 'CASTELL'.
 FLDS="NumPIF_Min,anyo,f_detec,nom_mun,prov_nom,sup_f"
-WHERE="prov_nom+LIKE+%27%25Castell%25%27"
+WHERE="UPPER%28prov_nom%29+LIKE+%27%25CASTELL%25%27"
 
 mkdir -p "$DATA"
 echo "==> Descargando el catálogo de capas del MapServer…"
@@ -38,7 +41,7 @@ for y in $(seq 2005 2024); do
   fi
   url="$B/$id/query?where=$WHERE&outFields=$FLDS&outSR=25830&returnGeometry=true&f=geojson&resultRecordCount=5000"
   fetch "$url" "$DATA/$y.geojson"
-  n=$(grep -o '"type":"Feature"' "$DATA/$y.geojson" | wc -l)
+  n=$(grep -o '"type":"Feature"' "$DATA/$y.geojson" | wc -l || true)  # 0 no debe matar set -e
   echo "   $y (capa $id): $n perímetros"
   if [[ "$n" -eq 0 ]]; then
     continue
