@@ -106,8 +106,8 @@ public class ClimatologiaService {
   }
 
   // comp_meteo ABSOLUTO (v1.1): 101 breakpoints P0..P100 del FWI sobre la distribución PROVINCIAL
-  // COMPLETA del periodo base (todos los municipios, todo el año, sin calentamiento). Pooled, NO por
-  // día: conserva la magnitud estacional (enero mapea bajo, agosto alto), que es lo que el
+  // COMPLETA del periodo base (todos los municipios, todo el año, sin calentamiento). Pooled, NO
+  // por día: conserva la magnitud estacional (enero mapea bajo, agosto alto), que es lo que el
   // percentil estacional borraba (docs/09). Determinista sobre la base congelada -> reproducible.
   private static final String Q_ECDF_PROVINCIAL =
       """
@@ -120,10 +120,7 @@ public class ClimatologiaService {
   /** Breakpoints P0..P100 del FWI provincial del periodo base (para comp_meteo absoluto v1.1). */
   public double[] breakpointsProvinciales(LocalDate desde, LocalDate hasta) {
     return jdbc.query(
-        Q_ECDF_PROVINCIAL,
-        rs -> rs.next() ? aDoubles(rs.getArray(1)) : null,
-        desde,
-        hasta);
+        Q_ECDF_PROVINCIAL, rs -> rs.next() ? aDoubles(rs.getArray(1)) : null, desde, hasta);
   }
 
   /**

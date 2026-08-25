@@ -23,17 +23,17 @@ class MetodologiaController {
   private static final List<String> CAVEATS =
       List.of(
           "El índice compuesto original (v1.0) NO batía al FWI crudo en la validación histórica."
-              + " v1.1 usa la meteo (percentil del FWI sobre la distribución provincial) como BASE y"
-              + " la estructura solo como MODULADOR acotado (±15 %).",
+              + " v1.1 usa la meteo (percentil del FWI provincial) como BASE y la estructura solo"
+              + " como MODULADOR acotado (±15 %).",
           "La pendiente del modulador se DERIVA del efecto de la estructura sobre el TAMAÑO del"
-              + " incendio (correlación con la superficie quemada), NO se ajusta contra la ignición:"
-              + " con 15 positivos, ajustarla sería sobreajuste.",
-          "Pesos de combustible DE PARTIDA (comportamiento publicado de Anderson), sin calibrar aún.",
+              + " incendio (correlación con la superficie), NO se ajusta contra la ignición: con 15"
+              + " positivos sería sobreajuste.",
+          "Pesos de combustible DE PARTIDA (comportamiento publicado de Anderson), sin calibrar.",
           "comp_vulnerabilidad NO entra en el índice: mide EXPOSICIÓN («qué se pierde si arde»), no"
-              + " peligro; se muestra aparte como contexto. Proxy débil de población, se sustituye en"
-              + " v2.0 con el módulo IUF/WUI.",
-          "Con meteo absoluta el índice ya es interpretable como PELIGRO real: un mapa en rojo de hace"
-              + " días parece operativo, pero los datos llevan desfase. Ver el aviso de fecha.");
+              + " peligro; va aparte como contexto. Proxy débil de población, se sustituye en v2.0"
+              + " con el módulo IUF/WUI.",
+          "Con meteo absoluta el índice ya es interpretable como PELIGRO real: un mapa en rojo de"
+              + " hace días parece operativo, pero los datos llevan desfase. Ver el aviso.");
 
   private static final String DOCUMENTACION =
       "https://github.com/R0b3r7DEV/guaita/blob/main/docs/04-indice-peligro.md";
