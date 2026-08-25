@@ -190,6 +190,90 @@ a ~10⁶ pares municipio-día), no un fallo aislado del modelo. Por eso el AUC-P
 reporta pero no decide, y ningún umbral fijo de nivel da precisión utilizable a
 esta tasa base. La utilidad es ordenar, no clasificar con un corte.
 
+## Decisión de forma (2026): variantes medidas, sin fijar pesos
+
+Antes de calibrar, se decide la **forma** del índice midiendo variantes con el arnés.
+Criterio: **AUC de CALIBRACIÓN** (2005-2015, 15 positivos, IC estrecho); la validación
+(5 positivos, IC ±0,25) se reporta pero no decide.
+
+### comp_meteo (dentro del compuesto multiplicativo actual)
+
+| Variante de comp_meteo | AUC calib | AUC valid |
+|---|---|---|
+| percentil estacional (actual) | 0,767 [0,696–0,832] | 0,752 |
+| absoluto (percentil provincial) | 0,785 [0,724–0,844] | 0,790 |
+| híbrido geométrico | 0,782 [0,724–0,841] | 0,778 |
+| híbrido máximo | 0,759 [0,696–0,823] | 0,768 |
+
+El **absoluto** bate al percentil (0,785 vs 0,767), coherente con el diagnóstico
+—el percentil tira magnitud—, pero los IC se solapan y la mejora es modesta. Ningún
+compuesto multiplicativo se acerca al FWI crudo (0,891): cambiar comp_meteo no es
+donde está el problema.
+
+### Estructura de combinación (el hallazgo)
+
+| Estructura | AUC calib | AUC valid |
+|---|---|---|
+| **`baseline_FWI_crudo`** | **0,891** [0,826–0,951] | 0,819 |
+| compuesto multiplicativo (actual) | 0,767 [0,696–0,832] | 0,752 |
+| solo meteo (percentil) | 0,891 [0,787–0,966] | 0,753 |
+| solo meteo (absoluto) | 0,891 [0,826–0,951] | 0,819 |
+| meteo × modulador estructural [0,8–1,2] (percentil) | 0,871 [0,773–0,941] | 0,763 |
+| **meteo × modulador estructural [0,8–1,2] (absoluto)** | **0,876** [0,820–0,927] | 0,827 |
+
+**El multiplicador de rango completo destruye la señal meteo.** Multiplicar la meteo
+(0,891) por `sqrt(0,65·ce+0,35·cv)` la hunde a 0,767. Un **modulador acotado**
+—meteo de base, estructura moviendo el resultado solo en una banda [0,8–1,2]—
+recupera casi todo (0,876), con su IC inferior (0,820) por encima del punto del
+compuesto actual (0,767): la diferencia es real, no ruido. Solo-meteo iguala al FWI
+crudo por construcción pero **tira la estructura**, que sí aporta (siguiente sección).
+
+### La estructura predice el TAMAÑO, no la ignición
+
+`ablacion_sin_meteo` = 0,468 (azar) dice que estructura+vulnerabilidad no predicen
+DÓNDE prende — lógico, la ignición es humana y se concentra cerca de la gente, no en
+el combustible más continuo. Pero esa es la métrica equivocada para este componente.
+Correlación de `comp_estructural` del término de inicio con la **superficie final** de
+los 26 positivos (n=24 con fila de índice):
+
+| | valor |
+|---|---|
+| Pearson(ce, superficie) | 0,341 |
+| Pearson(ce, ln superficie) | 0,496 |
+| **Spearman(ce, superficie)** | **0,616** |
+| Pearson(comp_meteo, superficie) | 0,190 |
+
+**`comp_estructural` predice el tamaño condicionado a que haya ignición** (Spearman
+0,616, moderada-fuerte, p≈0,001), muy por encima de comp_meteo (0,190). Está haciendo
+su trabajo: la meteo dice cuándo hay peligro de ignición, la estructura cuánto puede
+crecer. Por eso el componente **no se descarta**; cambia de rol, de multiplicador de
+rango completo a **modulador de severidad acotado**.
+
+### Chequeo operativo (lo que el AUC no ve)
+
+Villanueva de Viver 2023-03-23 (4.700 ha, temporada baja), compuesto y nivel por
+variante de comp_meteo:
+
+| Variante | índice | nivel |
+|---|---|---|
+| percentil | 66,35 | 4 |
+| absoluto | 62,11 | 4 |
+| híbrido geométrico | 64,20 | 4 |
+| híbrido máximo | 66,35 | 4 |
+
+**Ninguna lo entierra:** el absoluto lo deja en nivel 4 (idx 62), no en nivel 2. Se
+despeja la objeción de que el absoluto pierde anomalías de temporada baja — su FWI
+ese día ya era P83 provincial.
+
+### Recomendación de forma (a calibrar después)
+
+Meteo **absoluta** (percentil provincial) de base, `comp_estructural` como **modulador
+acotado** de severidad, `comp_vulnerab` fuera del número (lastre neutro con el proxy
+de población actual; se muestra como contexto). AUC calib 0,876 [0,820–0,927] —
+indistinguible del FWI crudo— pero conservando la información de severidad que el FWI
+crudo no tiene. La banda [0,8–1,2] y los pesos quedan para la calibración; aquí solo
+se decide la forma.
+
 ## Calibración
 
 Los parámetros calibrables están en `config/modelo-v1.yml`:
