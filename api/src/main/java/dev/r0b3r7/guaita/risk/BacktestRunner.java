@@ -48,7 +48,23 @@ class BacktestRunner implements ApplicationRunner {
         p3(sv[0]),
         (long) sv[2]);
     log.info("compuesto falsa alarma@nivel>=4: calib={} valid={}", p3(sc[1]), p3(sv[1]));
+
+    // Chequeo operativo: Villanueva de Viver 2023-03-23 (4.700 ha, temporada baja) por variante.
+    double[] v = service.villanueva20230323();
+    log.info("== Villanueva de Viver 2023-03-23 (cm_pct={} cm_abs={}) ==", p2(v[0]), p2(v[1]));
+    log.info("  compuesto percentil    idx={} nivel={}", p2(v[2]), nivel(v[2]));
+    log.info("  compuesto absoluto     idx={} nivel={}", p2(v[3]), nivel(v[3]));
+    log.info("  compuesto hibrido_geom idx={} nivel={}", p2(v[4]), nivel(v[4]));
+    log.info("  compuesto hibrido_max  idx={} nivel={}", p2(v[5]), nivel(v[5]));
     System.exit(0);
+  }
+
+  private static int nivel(double idx) {
+    return idx <= 20 ? 1 : idx <= 40 ? 2 : idx <= 60 ? 3 : idx <= 80 ? 4 : 5;
+  }
+
+  private static String p2(double v) {
+    return String.format(Locale.ROOT, "%.2f", v);
   }
 
   private void tabla(String periodo, List<BacktestService.Metrica> ms) {
@@ -70,6 +86,6 @@ class BacktestRunner implements ApplicationRunner {
   }
 
   private static String pad(String s) {
-    return String.format("%-26s", s);
+    return String.format("%-30s", s);
   }
 }

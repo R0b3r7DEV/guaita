@@ -2,6 +2,7 @@ package dev.r0b3r7.guaita.risk;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.ToDoubleFunction;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ public class BacktestService {
       """
       select extract(year from ip.fecha)::int anio, extract(doy from ip.fecha)::int doy,
              ip.indice, ip.comp_meteo cm,
+             100.0 * cume_dist() over (order by f.fwi) cm_abs,
              ip.comp_estructural ce, ip.comp_vulnerab cv, ip.nivel, f.fwi, m.temp_12utc_c tmax,
              (exists (select 1 from egif_incendio e
                       where e.ine_inicio = ip.ine_code and e.fecha_inicio = ip.fecha)) pos,
@@ -61,6 +63,7 @@ public class BacktestService {
       int doy,
       double indice,
       double cm,
+      double cmAbs,
       double ce,
       double cv,
       int nivel,
@@ -95,6 +98,7 @@ public class BacktestService {
                   rs.getInt("doy"),
                   rs.getDouble("indice"),
                   rs.getDouble("cm"),
+                  rs.getDouble("cm_abs"),
                   rs.getDouble("ce"),
                   rs.getDouble("cv"),
                   rs.getInt("nivel"),
@@ -110,17 +114,40 @@ public class BacktestService {
 
   private List<Metrica> metricas(List<Fila> filas) {
     List<Metrica> r = new ArrayList<>();
-    r.add(metrica("indice_compuesto", filas, Fila::indice));
+    // Referencias.
     r.add(metrica("baseline_FWI_crudo", filas, Fila::fwi));
-    r.add(metrica("baseline_Tmax", filas, Fila::tmax));
-    // Baseline de estacionalidad PURA: solo el calendario, cercanía al pico de la temporada de
-    // incendios (1-ago, doy 213; fijo, NO ajustado a los positivos). Cuantifica cuánto del AUC del
-    // FWI crudo es mera estacionalidad, dado que casi todos los positivos son de verano (docs/09).
     r.add(metrica("baseline_estacional_doy", filas, f -> -Math.abs(f.doy() - 213)));
-    r.add(metrica("ablacion_sin_meteo", filas, f -> 0.65 * f.ce() + 0.35 * f.cv()));
-    r.add(metrica("ablacion_sin_estructural", filas, f -> Math.sqrt(f.cm()) * Math.sqrt(f.cv())));
-    r.add(metrica("ablacion_sin_vulnerab", filas, f -> Math.sqrt(f.cm()) * Math.sqrt(f.ce())));
+    // Bloque 1: comp_meteo dentro del compuesto multiplicativo actual. cm=percentil estacional
+    // (tira magnitud), cm_abs=percentil sobre la distribución provincial (la conserva), y dos
+    // híbridos (media geométrica y máximo de ambos).
+    r.add(metrica("compuesto_meteo=percentil", filas, f -> comb(f.cm(), f)));
+    r.add(metrica("compuesto_meteo=absoluto", filas, f -> comb(f.cmAbs(), f)));
+    r.add(
+        metrica(
+            "compuesto_meteo=hibrido_geom",
+            filas,
+            f -> comb(Math.sqrt(f.cm() * f.cmAbs()), f)));
+    r.add(metrica("compuesto_meteo=hibrido_max", filas, f -> comb(Math.max(f.cm(), f.cmAbs()), f)));
+    // Bloque 3: estructura de combinación. Solo meteo (estructura como contexto, fuera del número)
+    // y meteo modulada por la estructura en una banda acotada [0,8..1,2] en vez de multiplicador
+    // de rango completo.
+    r.add(metrica("solo_meteo_percentil", filas, Fila::cm));
+    r.add(metrica("solo_meteo_absoluto", filas, Fila::cmAbs));
+    r.add(metrica("modulador_sobre_percentil", filas, f -> modulador(f.cm(), f)));
+    r.add(metrica("modulador_sobre_absoluto", filas, f -> modulador(f.cmAbs(), f)));
     return r;
+  }
+
+  // Compuesto multiplicativo (media geométrica): sqrt(meteo)·sqrt(0,65·ce+0,35·cv), meteo dada.
+  private static double comb(double meteo, Fila f) {
+    double combustibilidad = 0.65 * f.ce() + 0.35 * f.cv();
+    return Math.sqrt(Math.max(0.0, meteo)) * Math.sqrt(Math.max(0.0, combustibilidad));
+  }
+
+  // Meteo como base, estructura+vulnerab como modulador acotado a [0,8..1,2] (no diluye la meteo).
+  private static double modulador(double meteo, Fila f) {
+    double s = 0.65 * f.ce() + 0.35 * f.cv(); // 0..100
+    return meteo * (0.8 + 0.4 * (s / 100.0));
   }
 
   private Metrica metrica(String nombre, List<Fila> filas, ToDoubleFunction<Fila> score) {
@@ -190,5 +217,38 @@ public class BacktestService {
     double sens = nPos == 0 ? Double.NaN : (double) posEnAlto / nPos;
     double fa = marcados == 0 ? Double.NaN : (double) falsos / marcados;
     return new double[] {sens, fa, nPos, marcados};
+  }
+
+  /**
+   * Chequeo operativo que el AUC agregado no captura: qué compuesto sale para Villanueva de Viver
+   * (ine 12133) el 2023-03-23 (incendio de 4.700 ha en TEMPORADA BAJA) con cada variante de
+   * comp_meteo. Devuelve [cm_percentil, cm_absoluto, idx_percentil, idx_absoluto, idx_hibrido_geom,
+   * idx_hibrido_max]. Si una variante lo deja por debajo de nivel 4, es inaceptable operativamente
+   * aunque gane en AUC: un sistema que no marca un incendio así no sirve.
+   */
+  public double[] villanueva20230323() {
+    Map<String, Object> row =
+        jdbc.queryForMap(
+            "select ip.comp_meteo cm, ip.comp_estructural ce, ip.comp_vulnerab cv, f.fwi"
+                + " from indice_peligro ip"
+                + " join fwi_municipio f on f.ine_code = ip.ine_code and f.fecha = ip.fecha"
+                + " where ip.ine_code = '12133' and ip.fecha = '2023-03-23'");
+    double cmPct = ((Number) row.get("cm")).doubleValue();
+    double ce = ((Number) row.get("ce")).doubleValue();
+    double cv = ((Number) row.get("cv")).doubleValue();
+    double fwi = ((Number) row.get("fwi")).doubleValue();
+    Double cmAbs =
+        jdbc.queryForObject(
+            "select 100.0 * avg(case when fwi <= ? then 1 else 0 end)"
+                + " from fwi_municipio"
+                + " where extract(month from fecha) between 3 and 10"
+                + " and extract(year from fecha) between 2005 and 2022 and not calentamiento",
+            Double.class,
+            fwi);
+    Fila f = new Fila(2023, 82, 0, cmPct, cmAbs, ce, cv, 0, fwi, 0, false);
+    return new double[] {
+      cmPct, cmAbs, comb(cmPct, f), comb(cmAbs, f),
+      comb(Math.sqrt(cmPct * cmAbs), f), comb(Math.max(cmPct, cmAbs), f)
+    };
   }
 }
