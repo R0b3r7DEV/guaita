@@ -51,11 +51,25 @@ El EGIF da un parte por incendio con el **término de inicio** + la superficie t
 los municipios afectados (Bejís marcó 12) NO vienen enumerados. Construir los pares
 como (término de inicio, fecha) metería Jérica, Viver o Torás en los **negativos** el
 día que ardieron con Bejís → contaminación de etiquetas (el modelo se penaliza por
-acertar). Mientras no haya perímetros de EFFIS, se aplica la opción **conservadora**:
-los municipios **vecinos** (`ST_Touches`) del término de inicio, en la ventana
-`[fecha_inicio, fecha_fin]` del incendio, se **excluyen de los negativos** — no se
-cuentan como positivos (no se inventan etiquetas) ni como negativos. Afecta a la
-interpretación de todas las métricas y queda declarado aquí.
+acertar).
+
+**Corrección definitiva (perímetros ICV/GVA, 2026).** EFFIS sigue caído, pero los
+perímetros de incendio del ICV (1993-2024, CC-BY) son su sustituto y traen justo lo
+que faltaba: la geometría del **área quemada** y el número de parte EGIF
+(`NumPIF_Min`). Cargados en `perimetro_incendio` (V15, `etl/load_perimetros_gva.sh`):
+**1721 perímetros de Castellón 2005-2024**, y los **26 positivos casan con su
+perímetro** por `numpif = numeroparte`. Verificado antes de fiarse: **Bejís 2022
+cubre 9 municipios** (Bejís 95 % de su término, Torás 97 %, Teresa 86 %, Sacañet
+76 %, más El Toro/Altura/Viver/Jérica/Barracas parciales) y **~17.300 ha** — en el
+orden esperado (~12 munis / ~16.800 ha), ni 3 ni 40.000. Los 9 vs 12 de prensa: el
+resto tuvo solape marginal o era zona evacuada no quemada.
+
+Con eso, la exclusión de negativos deja de ser por vecindad aproximada (`ST_Touches`,
+que excluía vecinos aunque no se quemaran) y pasa a ser por el **área quemada real**:
+los términos que el perímetro del propio parte cubre (**≥10 ha**, salvo el de inicio),
+en la ventana `[fecha_inicio, fecha_fin]`, se **excluyen de los negativos** — no se
+cuentan como positivos (no se inventan etiquetas) ni como negativos. Los mismos
+perímetros alimentan `f_tiempo` real (ver `Resultados con datos limpios`).
 
 ### Partición temporal usada
 
@@ -102,6 +116,79 @@ de metodología.
 5. **Ablación.** Recalcular quitando un componente cada vez para saber cuál
    aporta. Es probable que `f_tiempo` (la curva en U de regeneración) sea la
    contribución más original; conviene medirla.
+
+## Resultados con datos limpios (2026)
+
+Primera medición sobre datos NO contaminados: `f_tiempo` real (perímetros ICV/GVA
+2005-2024, 38 fuegos cumplen el reparto del 10 % en 31 municipios, ya no 1,00 en
+todo) y contaminación de etiquetas corregida por el **área quemada real** (los
+términos que cubre el perímetro del propio parte salen de los negativos, no por
+vecindad `ST_Touches` sino por ≥10 ha quemadas). Corte 2005-2015 / 2016-2022.
+Positivos en ventana: 15 calibración, 5 validación. AUC-ROC con IC 95 % (bootstrap
+de valores de colocación, 2000 remuestras).
+
+| Variante | AUC calib (2005-2015) | AUC valid (2016-2022) |
+|---|---|---|
+| `indice_compuesto` | 0,767 [0,700–0,834] | 0,752 [0,459–0,946] |
+| `baseline_FWI_crudo` | **0,891** [0,822–0,951] | **0,819** [0,593–0,968] |
+| `baseline_Tmax` | 0,571 | 0,746 |
+| `baseline_estacional_doy` | 0,475 | 0,741 [0,405–0,927] |
+| `ablacion_sin_meteo` (estructura+vulnerab) | 0,468 | 0,580 |
+| `ablacion_sin_estructural` (meteo×vulnerab) | 0,663 | 0,679 |
+| `ablacion_sin_vulnerab` (meteo×estructura) | 0,769 | 0,748 |
+
+**El diagnóstico se sostiene: el índice compuesto NO bate al FWI crudo.** Y ahora
+es un diagnóstico, no una conjetura: limpiar las etiquetas y darle a `f_tiempo`
+datos reales lo movió un pelo (0,755→0,767 calib) pero no lo rescató. Las causas,
+por ablación:
+
+- **`comp_meteo` (percentil) tira magnitud que el FWI crudo conserva.** El percentil
+  estacional borra a propósito el nivel absoluto del FWI, y ese nivel es justo lo
+  que ordena los días de gran incendio. Es la pérdida principal.
+- **`comp_vulnerab` no aporta nada:** `ablacion_sin_vulnerab` (0,769/0,748) ≈ el
+  compuesto (0,767/0,752). La vulnerabilidad es lastre neutro, no señal.
+- **La estructura sola es casi aleatoria para la ignición** (`sin_meteo`
+  0,468/0,580): mide potencial de *propagación*, no de *ignición*. Coherente con
+  que el índice mida "condiciones para un gran incendio", no dónde prende.
+
+### El confound de estacionalidad (el análisis honesto)
+
+`baseline_estacional_doy` solo conoce el calendario (cercanía al 1-ago, pico de la
+temporada; fijo, no ajustado a los positivos). Su AUC mide cuánto de la separación
+es **pura estación**, dado que casi todos los positivos son de verano:
+
+- En **validación** llega a 0,741 — casi como el FWI crudo (0,819) y por encima del
+  compuesto (0,752). Con solo 5 positivos (Bejís y compañía, agosto), "es verano"
+  ya separa casi tan bien como el modelo entero. El IC [0,405–0,927] avisa de lo
+  frágil que es.
+- En **calibración** cae a 0,475 (peor que el azar): con 15 positivos repartidos
+  por la temporada, la cercanía al 1-ago no discrimina.
+
+La lectura: **una parte grande del AUC del FWI crudo en validación es
+estacionalidad**, pero el FWI lleva señal meteorológica real más allá de la
+estación — visible en calibración, donde con más n el FWI (0,891) despega del
+baseline estacional (0,475). Por eso, si al final se prefiere el FWI **absoluto**
+sobre el percentil, será **por utilidad operativa** (conservar la magnitud que
+ordena los grandes incendios), no porque su AUC sea mayor "gratis": buena parte de
+esa ventaja es codificar el verano.
+
+### Villanueva de Viver 2023: el percentil no entierra el absoluto
+
+El argumento de partida era que el percentil rescata anomalías de temporada baja
+que el absoluto entierra. Villanueva de Viver (2023-03-23), el caso que mejor
+discrimina las dos vías, lo **debilita**: su FWI absoluto ese día (32,91) es el
+**P83 del año**, por encima de la media de agosto (26,0) — no está enterrado. El
+percentil lo marca P95, sí, pero el absoluto ya lo pone alto. La ventaja del
+percentil en temporada baja es menor de lo que se asumió; anotado para no venderla
+de más.
+
+### Sensibilidad y falsa alarma (nivel ≥ 4)
+
+Sensibilidad del compuesto: 0,267 (calib) / 0,600 (valid). Falsa alarma ≈ 1,000 en
+ambos y AUC-PR ≈ 0,000: es la realidad del desbalance extremo (20 positivos frente
+a ~10⁶ pares municipio-día), no un fallo aislado del modelo. Por eso el AUC-PR se
+reporta pero no decide, y ningún umbral fijo de nivel da precisión utilizable a
+esta tasa base. La utilidad es ordenar, no clasificar con un corte.
 
 ## Calibración
 

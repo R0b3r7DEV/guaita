@@ -378,12 +378,16 @@ public class IndiceService {
     if (filas == null || !filas.equals(esperadas)) {
       fallos.add(filas + " filas, esperaba " + esperadas + " (FWI no-calentamiento)");
     }
+    // Ancla de regresión del compuesto. Con f_tiempo REAL (perimetro_incendio) la Vall d'Uixó no
+    // tiene fuego que cumpla el reparto del 10% (25 perímetros la tocan, ninguno llega): f_tiempo
+    // neutro (1.00) -> comp_estructural = parteEstatica = 44.58 -> índice 51.77. Antes salía 32.52
+    // porque una semilla suprimía su f_tiempo; el valor cambió por el cambio de fuente, no por bug.
     Double vall =
         jdbc.queryForObject(
             "select indice from indice_peligro where ine_code = '12126' and fecha = '2026-08-16'",
             Double.class);
-    if (vall == null || Math.abs(vall - 32.52) > 0.05) {
-      fallos.add("la Vall d'Uixó 2026-08-16 = " + vall + ", esperaba 32.52");
+    if (vall == null || Math.abs(vall - 51.77) > 0.05) {
+      fallos.add("la Vall d'Uixó 2026-08-16 = " + vall + ", esperaba 51.77");
     }
     Integer incoherentes =
         jdbc.queryForObject(
