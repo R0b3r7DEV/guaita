@@ -43,6 +43,19 @@ public record ModeloParams(
       double pesoEspacioProtegido,
       Vulnerabilidad.NormaPoblacion normaPoblacion) {}
 
-  /** Combinación del índice y umbrales de nivel (docs/04 §4). */
-  public record Indice(double pesoEstructural, double pesoVulnerab, List<Integer> niveles) {}
+  /**
+   * Combinación del índice y umbrales de nivel (docs/04 §4). v1.1: {@code indice = comp_meteo_abs ·
+   * modulador(comp_estructural)}, con el modulador LINEAL acotado {@code clip(1 + pendiente·(ce −
+   * anclaje), min, max)}. La pendiente se DERIVA del efecto sobre el tamaño (docs/09), no se fija.
+   * {@code pesoEstructural/pesoVulnerab} son de la forma v1.0 (media geométrica); en v1.1 no entran
+   * en el índice (comp_vulnerab pasa a contexto), se conservan para trazabilidad.
+   */
+  public record Indice(
+      double pesoEstructural,
+      double pesoVulnerab,
+      double moduladorAnclaje,
+      double moduladorPendiente,
+      double moduladorMin,
+      double moduladorMax,
+      List<Integer> niveles) {}
 }

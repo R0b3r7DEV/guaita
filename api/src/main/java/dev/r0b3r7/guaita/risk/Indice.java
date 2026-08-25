@@ -26,6 +26,26 @@ public final class Indice {
   }
 
   /**
+   * Índice v1.1 (docs/09): {@code comp_meteo_abs · modulador(comp_estructural)}. La meteo (percentil
+   * provincial, absoluta) es la base; la estructura MODULA en una banda acotada, no multiplica en
+   * rango completo (que diluía la señal meteo, AUC 0,891→0,767). El modulador es lineal, {@code
+   * clip(1 + pendiente·(ce − anclaje), min, max)}, con la pendiente DERIVADA del efecto sobre el
+   * tamaño (Spearman 0,616; extremo prudente del IC), no ajustada contra la ignición. comp_vulnerab
+   * NO entra: mide exposición ("qué se pierde"), no peligro, y va aparte como contexto.
+   */
+  public static double calcularV11(
+      double compMeteoAbs, double compEstructural, ModeloParams.Indice cfg) {
+    double mod =
+        Math.max(
+            cfg.moduladorMin(),
+            Math.min(
+                cfg.moduladorMax(),
+                1.0 + cfg.moduladorPendiente() * (compEstructural - cfg.moduladorAnclaje())));
+    double idx = Math.max(0.0, compMeteoAbs) * mod;
+    return Math.min(100.0, Math.max(0.0, idx));
+  }
+
+  /**
    * Nivel 1..5 según los límites SUPERIORES de {@code niveles} (config, p.ej. [20,40,60,80,100]):
    * el primer tramo cuyo tope no supera el índice. Un índice justo en el tope cae en ese tramo.
    */

@@ -6,11 +6,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-/** Índice compuesto: media geométrica (la meteo actúa de compuerta) y niveles. */
+/** Índice: media geométrica v1.0, modulador v1.1 (meteo base) y niveles. */
 class IndiceTest {
 
+  // v1.1: anclaje 48,3, pendiente 0,00455, banda [0,85..1,15].
   private static final ModeloParams.Indice CFG =
-      new ModeloParams.Indice(0.65, 0.35, List.of(20, 40, 60, 80, 100));
+      new ModeloParams.Indice(0.65, 0.35, 48.3, 0.00455, 0.85, 1.15, List.of(20, 40, 60, 80, 100));
 
   @Test
   void mediaGeometrica() {
@@ -28,6 +29,20 @@ class IndiceTest {
     double idx = Indice.calcular(10.0, 100.0, 0.0, CFG);
     assertEquals(Math.sqrt(10.0) * Math.sqrt(65.0), idx, 1e-9);
     assertTrue(idx < 30.0, "meteo baja debe hundir el índice pese al estructural máximo");
+  }
+
+  @Test
+  void moduladorV11() {
+    // en el anclaje (ce=48,3) el modulador es 1 -> índice = meteo
+    assertEquals(50.0, Indice.calcularV11(50.0, 48.3, CFG), 1e-9);
+    // meteo=0 -> 0, gane lo que gane la estructura
+    assertEquals(0.0, Indice.calcularV11(0.0, 100.0, CFG), 1e-9);
+    // estructura muy alta -> modulador saturado a max 1,15
+    assertEquals(50.0 * 1.15, Indice.calcularV11(50.0, 1000.0, CFG), 1e-9);
+    // estructura muy baja -> modulador saturado a min 0,85
+    assertEquals(50.0 * 0.85, Indice.calcularV11(50.0, -1000.0, CFG), 1e-9);
+    // la estructura solo MODULA: no puede hundir la meteo a cero ni dispararla sola
+    assertTrue(Indice.calcularV11(40.0, 10.0, CFG) >= 40.0 * 0.85);
   }
 
   @Test

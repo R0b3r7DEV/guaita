@@ -105,6 +105,27 @@ public class ClimatologiaService {
     return fallos;
   }
 
+  // comp_meteo ABSOLUTO (v1.1): 101 breakpoints P0..P100 del FWI sobre la distribución PROVINCIAL
+  // COMPLETA del periodo base (todos los municipios, todo el año, sin calentamiento). Pooled, NO por
+  // día: conserva la magnitud estacional (enero mapea bajo, agosto alto), que es lo que el
+  // percentil estacional borraba (docs/09). Determinista sobre la base congelada -> reproducible.
+  private static final String Q_ECDF_PROVINCIAL =
+      """
+      select (percentile_cont(array(select i / 100.0 from generate_series(0, 100) i))
+                within group (order by fwi))
+      from fwi_municipio
+      where fecha between ? and ? and not calentamiento
+      """;
+
+  /** Breakpoints P0..P100 del FWI provincial del periodo base (para comp_meteo absoluto v1.1). */
+  public double[] breakpointsProvinciales(LocalDate desde, LocalDate hasta) {
+    return jdbc.query(
+        Q_ECDF_PROVINCIAL,
+        rs -> rs.next() ? aDoubles(rs.getArray(1)) : null,
+        desde,
+        hasta);
+  }
+
   /**
    * Percentil de un evento (municipio, fecha) por la nueva ruta, o {@code null} si falta el dato.
    */

@@ -13,7 +13,7 @@
 guaita:
   modelo:
     # Cadena estampada en cada fila de indice_peligro (docs/03).
-    version: "v1.0"
+    version: "v1.1"
 
     # --- comp_meteo: normalización por ventana estacional (docs/04 §1) ---
     meteo:
@@ -95,11 +95,27 @@ guaita:
       # Parametrizable para que la calibración de Fase 4 lo pueda probar.
       norma-poblacion: sqrt
 
-    # --- índice compuesto (docs/04 §4) ---
-    # indice = comp_meteo^0.5 * (peso-estructural*comp_estructural
-    #                          + peso-vulnerab*comp_vulnerab)^0.5   (media geométrica)
+    # --- índice v1.1 (docs/09): meteo ABSOLUTA × modulador estructural ---
+    # indice = comp_meteo_abs * clip(1 + pendiente*(comp_estructural - anclaje), min, max)
+    #
+    # comp_meteo_abs = percentil del FWI sobre la distribución PROVINCIAL COMPLETA del periodo base
+    # (conserva la magnitud estacional que el percentil por-día borraba). La estructura MODULA en una
+    # banda estrecha, no multiplica en rango completo (que diluía la meteo: AUC 0,891 -> 0,767).
+    # comp_vulnerab NO entra en el índice: mide EXPOSICIÓN, no peligro; va aparte como contexto.
     indice:
+      # pesos de la forma v1.0 (media geométrica); NO se usan en v1.1, se conservan para trazabilidad.
       peso-estructural: 0.65
       peso-vulnerab: 0.35
-      # Límite SUPERIOR de cada nivel 1..5 (0-20 bajo ... 81-100 extremo).
+      # Modulador estructural LINEAL y acotado. La pendiente se DERIVA del efecto observado del
+      # estructural sobre el TAMAÑO del incendio (Spearman 0,616, n=24; docs/09), NO se ajusta contra
+      # la ignición: pendiente conservadora en ln 0,0091 (límite inferior IC 95 %), amortiguada sqrt
+      # (media geométrica) -> 0,00455 ≈ lineal cerca de 1. Anclaje = mediana PROVINCIAL de
+      # comp_estructural (neutro para el municipio típico, no para uno que ya ardió). El clip evita
+      # que el 10 % de cola baja penalice de más; con esta pendiente casi no satura arriba.
+      modulador-anclaje: 48.3
+      modulador-pendiente: 0.00455
+      modulador-min: 0.85
+      modulador-max: 1.15
+      # Límite SUPERIOR de cada nivel 1..5. Se fijan sobre percentiles de la distribución v1.1
+      # (docs/09); de partida los tramos de 20 en 20, se revisan tras el primer backfill.
       niveles: [20, 40, 60, 80, 100]

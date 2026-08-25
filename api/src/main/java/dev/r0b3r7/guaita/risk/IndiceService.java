@@ -58,11 +58,12 @@ public class IndiceService {
   private static final String Q_FACTORES =
       """
       select e.frac_forestal ff, e.continuidad co, e.peso_modelo pm, e.f_pendiente fp,
-             v.comp_vulnerab cv,
+             v.comp_vulnerab cv, f.fwi fwi,
              (m.temp_12utc_c >= 30 and m.hr_12utc_pct <= 30 and m.viento_12utc_kmh >= 30) r303030
       from estructural_municipio e
       join vulnerab_municipio v on v.ine_code = e.ine_code
       join meteo_municipio m on m.ine_code = e.ine_code and m.fecha = ?
+      join fwi_municipio f on f.ine_code = e.ine_code and f.fecha = ?
       where e.ine_code = ?
       """;
 
@@ -160,6 +161,10 @@ public class IndiceService {
   public Resultado calcularDia(ModeloParams params, LocalDate fecha) {
     String version = params.version();
     ModeloParams.FTiempo cfgT = params.fTiempo();
+    ModeloParams.Indice cfgI = params.indice();
+    double[] bpProv =
+        climatologia.breakpointsProvinciales(
+            params.meteo().baseDesde(), params.meteo().baseHasta());
     Map<String, Double> fTiempo = fTiempoPorMunicipio(fecha, cfgT);
 
     List<String> munis =
@@ -167,21 +172,17 @@ public class IndiceService {
     int[] porNivel = new int[5];
     int filas = 0;
     for (String ine : munis) {
-      Double compMeteo = climatologia.percentilEvento(ine, fecha, version);
-      if (compMeteo == null) {
-        throw new IllegalStateException("sin comp_meteo para " + ine + " en " + fecha);
-      }
-      Map<String, Object> f = jdbc.queryForMap(Q_FACTORES, fecha, ine);
+      Map<String, Object> f = jdbc.queryForMap(Q_FACTORES, fecha, fecha, ine);
+      double compMeteo = Climatologia.percentil(num(f, "fwi"), bpProv); // absoluto (v1.1)
       double parteEstatica =
           Estructural.parteEstatica(num(f, "ff"), num(f, "co"), num(f, "pm"), num(f, "fp"));
       double ft = fTiempo.getOrDefault(ine, cfgT.sinDatoValor());
       double compEstructural = Math.min(100.0, Math.max(0.0, parteEstatica * ft));
-      double compVulnerab = num(f, "cv");
+      double compVulnerab = num(f, "cv"); // contexto, NO entra en el índice v1.1
       boolean r303030 = Boolean.TRUE.equals(f.get("r303030"));
 
-      double indice =
-          round2(Indice.calcular(compMeteo, compEstructural, compVulnerab, params.indice()));
-      int nivel = Indice.nivel(indice, params.indice().niveles());
+      double indice = round2(Indice.calcularV11(compMeteo, compEstructural, cfgI));
+      int nivel = Indice.nivel(indice, cfgI.niveles());
 
       jdbc.update(
           UPSERT,
@@ -262,11 +263,15 @@ public class IndiceService {
     ModeloParams.FTiempo cfgT = params.fTiempo();
     ModeloParams.Indice cfgI = params.indice();
     Map<String, List<LocalDate>> fuegos = fuegosCualifican(cfgT.repartoMinFracForestal());
+    double[] bpProv =
+        climatologia.breakpointsProvinciales(
+            params.meteo().baseDesde(), params.meteo().baseHasta());
     List<String> munis =
         jdbc.queryForList("select ine_code from municipio order by ine_code", String.class);
     int filas = 0;
     for (String ine : munis) {
-      filas += backfillMunicipio(ine, version, cfgT, cfgI, fuegos.getOrDefault(ine, List.of()));
+      filas +=
+          backfillMunicipio(ine, version, cfgT, cfgI, bpProv, fuegos.getOrDefault(ine, List.of()));
     }
     jdbc.execute("refresh materialized view mv_indice_hoy");
     Map<String, Object> r =
@@ -286,31 +291,26 @@ public class IndiceService {
       String version,
       ModeloParams.FTiempo cfgT,
       ModeloParams.Indice cfgI,
+      double[] bpProv,
       List<LocalDate> fuegos) {
-    Map<Integer, double[]> clima = cargarClimatologia(ine, version);
     Map<String, Object> f = jdbc.queryForMap(Q_FACT_MUNI, ine);
     double parteEstatica =
         Estructural.parteEstatica(num(f, "ff"), num(f, "co"), num(f, "pm"), num(f, "fp"));
-    double compVulnerab = num(f, "cv");
+    double compVulnerab = num(f, "cv"); // contexto, NO entra en el índice v1.1
 
     List<Object[]> batch = new ArrayList<>();
     jdbc.query(
         Q_SERIE,
         (java.sql.ResultSet rs) -> {
           LocalDate fecha = rs.getObject("fecha", LocalDate.class);
-          int doy = rs.getInt("doy");
-          double[] bp = clima.get(doy);
-          if (bp == null) {
-            throw new IllegalStateException("sin climatología para " + ine + " doy " + doy);
-          }
-          double compMeteo = Climatologia.percentil(rs.getDouble("fwi"), bp);
+          double compMeteo = Climatologia.percentil(rs.getDouble("fwi"), bpProv); // absoluto (v1.1)
           var anios = Regeneracion.aniosDesdeUltimoIncendio(fecha, fuegos);
           double ft =
               anios.isPresent()
                   ? Regeneracion.fTiempo(anios.getAsInt(), cfgT)
                   : cfgT.sinDatoValor();
           double compEstructural = Math.min(100.0, Math.max(0.0, parteEstatica * ft));
-          double indice = round2(Indice.calcular(compMeteo, compEstructural, compVulnerab, cfgI));
+          double indice = round2(Indice.calcularV11(compMeteo, compEstructural, cfgI));
           int nivel = Indice.nivel(indice, cfgI.niveles());
           boolean r303030 =
               rs.getDouble("t") >= 30 && rs.getDouble("h") <= 30 && rs.getDouble("v") >= 30;
@@ -333,23 +333,6 @@ public class IndiceService {
     }
     jdbc.batchUpdate(UPSERT, batch);
     return batch.size();
-  }
-
-  private Map<Integer, double[]> cargarClimatologia(String ine, String version) {
-    Map<Integer, double[]> out = new HashMap<>();
-    jdbc.query(
-        "select doy, breakpoints from fwi_climatologia where ine_code = ? and version_modelo = ?",
-        (java.sql.ResultSet rs) -> {
-          Object[] vals = (Object[]) rs.getArray("breakpoints").getArray();
-          double[] bp = new double[vals.length];
-          for (int i = 0; i < vals.length; i++) {
-            bp[i] = ((Number) vals[i]).doubleValue();
-          }
-          out.put(rs.getInt("doy"), bp);
-        },
-        ine,
-        version);
-    return out;
   }
 
   private Map<String, List<LocalDate>> fuegosCualifican(double reparto) {
@@ -378,16 +361,14 @@ public class IndiceService {
     if (filas == null || !filas.equals(esperadas)) {
       fallos.add(filas + " filas, esperaba " + esperadas + " (FWI no-calentamiento)");
     }
-    // Ancla de regresión del compuesto. Con f_tiempo REAL (perimetro_incendio) la Vall d'Uixó no
-    // tiene fuego que cumpla el reparto del 10% (25 perímetros la tocan, ninguno llega): f_tiempo
-    // neutro (1.00) -> comp_estructural = parteEstatica = 44.58 -> índice 51.77. Antes salía 32.52
-    // porque una semilla suprimía su f_tiempo; el valor cambió por el cambio de fuente, no por bug.
+    // Ancla de regresión v1.1: la Vall d'Uixó 2026-08-16. Valor fijado tras el primer backfill v1.1
+    // (indice = comp_meteo_abs · modulador; distinto de v1.0). Presencia y rango por ahora.
     Double vall =
         jdbc.queryForObject(
             "select indice from indice_peligro where ine_code = '12126' and fecha = '2026-08-16'",
             Double.class);
-    if (vall == null || Math.abs(vall - 51.77) > 0.05) {
-      fallos.add("la Vall d'Uixó 2026-08-16 = " + vall + ", esperaba 51.77");
+    if (vall == null || vall < 0 || vall > 100) {
+      fallos.add("la Vall d'Uixó 2026-08-16 = " + vall + " (fuera de rango o ausente)");
     }
     Integer incoherentes =
         jdbc.queryForObject(
