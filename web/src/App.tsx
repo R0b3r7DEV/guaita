@@ -23,8 +23,10 @@ function App() {
           índice no es oficial. Ante un incendio, llame al <strong>112</strong>.
         </p>
         <p className="disclaimer-desfase">
-          Índice <strong>analítico</strong> basado en reanálisis meteorológico, con unos <strong>5
-          días de desfase</strong>. Para el nivel de riesgo <strong>actual</strong>, consulte el{" "}
+          El índice refleja <strong>peligro real</strong> (no una anomalía), pero calculado sobre
+          reanálisis meteorológico con unos <strong>5 días de desfase</strong>: un nivel alto
+          describe las condiciones de hace días, <strong>no necesariamente las de hoy</strong>. Para
+          el riesgo <strong>actual</strong>, consulte el{" "}
           <a
             href="https://www.112cv.gva.es/es/incendios-forestales"
             target="_blank"

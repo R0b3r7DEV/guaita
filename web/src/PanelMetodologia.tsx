@@ -32,14 +32,21 @@ export default function PanelMetodologia({ onClose }: { onClose: () => void }) {
             <h2>Metodología · modelo {m.versionModelo}</h2>
             <p className="metodo-formula">{m.formula}</p>
 
-            <h3>Pesos vigentes</h3>
+            <h3>Forma vigente</h3>
             <ul className="metodo-lista">
-              <li>Estructural {m.pesos.estructural} · Vulnerabilidad {m.pesos.vulnerab}</li>
               <li>
-                Vulnerabilidad = {m.pesos.poblacion} población + {m.pesos.espacioProtegido} suelo
-                protegido (normalización de población: {m.normaPoblacion})
+                <strong>Meteo</strong> (base): percentil del FWI sobre la distribución provincial
+                completa. Absoluta, no anomalía estacional: conserva la magnitud del verano.
               </li>
-              <li>Normalización meteo: ventana estacional de ±{m.meteoVentanaDias} días</li>
+              <li>
+                <strong>Estructura</strong> (modulador): banda acotada [{m.modulador.min}–
+                {m.modulador.max}], pendiente {m.modulador.pendiente} anclada en{" "}
+                {m.modulador.anclaje} (mediana provincial). Solo mueve a los extremos.
+              </li>
+              <li>
+                <strong>Vulnerabilidad</strong>: exposición, fuera del índice (normalización de
+                población: {m.normaPoblacion}). Se muestra como contexto.
+              </li>
               <li>Niveles (topes): {m.niveles.join(" · ")}</li>
             </ul>
 

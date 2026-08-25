@@ -274,6 +274,74 @@ indistinguible del FWI crudo— pero conservando la información de severidad qu
 crudo no tiene. La banda [0,8–1,2] y los pesos quedan para la calibración; aquí solo
 se decide la forma.
 
+## Forma v1.1 en producción (2026)
+
+Fijada la forma —meteo absoluta × modulador estructural—, se implementa como
+`version_modelo = v1.1` y se recalcula TODO el histórico (1.062.585 filas). El
+modulador es lineal, `clip(1 + 0,00455·(ce − 48,3), 0,85, 1,15)`, con la pendiente
+**derivada del efecto sobre el tamaño** (ver arriba), NO ajustada contra ignición.
+
+### El confounder de techo, descartado
+
+Antes de fiarse del efecto tamaño↔estructura se comprobó que no fuera aritmético
+(más monte → cabe más fuego): la superficie forestal disponible (del municipio y de
+su entorno de 5 km) **no correlaciona** con la quemada (−0,05 a 0,12), y la parcial
+de `comp_estructural` con el tamaño **controlando por ella no se mueve** (0,496 →
+0,485/0,499). Los factores SIN sesgo de escala —peso de combustible 0,41, continuidad
+0,31— predicen el tamaño por su cuenta. La señal está en la CALIDAD del combustible,
+no en la cantidad de monte. La pendiente se toma del **extremo prudente** del IC 95 %
+(0,0091; el IC es ancho con n=24), amortiguada sqrt → 0,00455.
+
+### Verificación (no selección)
+
+El arnés **verifica** que la forma no daña, no elige `b` (ya derivado). Índice v1.1
+realmente producido vs referencia y baselines:
+
+| Variante | AUC calib | AUC valid |
+|---|---|---|
+| **`indice_v1_1_producido`** | **0,864** [0,817–0,908] | 0,823 [0,575–0,969] |
+| `baseline_FWI_crudo` | 0,891 [0,826–0,951] | 0,819 |
+| `solo_meteo_absoluto` | 0,891 | 0,819 |
+| `baseline_estacional_doy` | 0,475 | 0,741 |
+
+Indistinguible del FWI crudo (ICs muy solapados; en validación 0,823 > 0,819) y muy
+por encima del baseline estacional: el modulador estructural no cuesta AUC de
+ignición y añade la severidad. AUC-PR ≈ 0 en todas por el desbalance (no decide).
+
+### Umbrales de nivel
+
+El índice v1.1 ES un percentil provincial de FWI modulado ±15 %, así que su eje es un
+eje de **percentil de peligro**. Los tramos `[20, 40, 60, 80]` lo parten en quintiles
+de peligro casi iguales, sin retocar nada:
+
+| Nivel | 1 | 2 | 3 | 4 | 5 |
+|---|---|---|---|---|---|
+| % de días-municipio | 20,5 | 20,5 | 20,5 | 21,2 | **17,4** |
+
+El nivel 5 (extremo) es el ~17 % superior: ni vacío (el problema de v1.0) ni
+dominante. Dos comprobaciones que mandan sobre la estética:
+
+- **Los 26 positivos:** 21 de 24 (con fila de índice) alcanzan **nivel ≥ 4** (17 en
+  nivel 5, 4 en nivel 4). Los 3 que no (nivel 2-3) son los más pequeños (119-205 ha)
+  en días de meteo floja. La mayoría llega a 4: los umbrales están bien.
+- **Los dos casos que mejor conocemos:** Villanueva de Viver 2023-03-23 → **nivel 5**
+  (idx 90,3; su FWI de marzo es P88 provincial, modulado al alza por la estructura);
+  la Vall d'Uixó 2026-07-25 → **nivel 5** (idx 97,7).
+
+### La estacionalidad vuelve al índice
+
+Con meteo absoluta, el reparto mensual deja de ser plano (era el efecto del percentil
+estacional): enero bajo, julio-agosto alto, como debe ser.
+
+| Mes | 1 | 3 | 5 | 7 | 8 | 10 | 12 |
+|---|---|---|---|---|---|---|---|
+| índice medio | 37 | 44 | 51 | **74** | 70 | 42 | 34 |
+| % nivel ≥ 4 | 15 | 32 | 43 | **79** | 72 | 28 | 12 |
+
+Esto hace el índice interpretable como **peligro real**, no como anomalía — y por eso
+el desfase temporal D-5 es MÁS engañoso ahora (un mapa en rojo de hace cinco días
+parece operativo). El aviso de desfase se mantiene visible y con redacción acorde.
+
 ## Calibración
 
 Los parámetros calibrables están en `config/modelo-v1.yml`:

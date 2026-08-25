@@ -81,13 +81,24 @@ function Contenido({ d }: { d: Detalle }) {
       </header>
 
       <section>
-        <h3>Componentes</h3>
-        <Componente nombre="Meteo (percentil FWI)" valor={d.componentes.meteo} />
+        <h3>Peligro</h3>
+        <Componente nombre="Meteo (percentil FWI provincial)" valor={d.componentes.meteo} />
         <Componente nombre="Estructural (combustible)" valor={d.componentes.estructural} />
+        <p className="panel-nota">
+          El índice (v1.1) parte de la <strong>meteo</strong> —percentil del FWI sobre la
+          distribución provincial— y la <strong>estructura</strong> solo la MODULA en una banda
+          estrecha (±15 %). Un día de lluvia da peligro bajo por mucho combustible que haya.
+        </p>
+      </section>
+
+      <section>
+        <h3>
+          Exposición <span className="panel-etq">contexto · no es peligro</span>
+        </h3>
         <Componente nombre="Vulnerabilidad" valor={d.componentes.vulnerabilidad} />
         <p className="panel-nota">
-          El índice es la media geométrica: si la meteo es baja (lluvia), el peligro cae aunque haya
-          mucho combustible.
+          Responde a «qué se pierde si arde» (población, espacios protegidos), no a «cuán peligroso
+          es hoy». <strong>No entra en el índice</strong>; se muestra aparte como contexto.
         </p>
       </section>
 

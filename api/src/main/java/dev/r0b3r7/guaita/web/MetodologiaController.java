@@ -22,26 +22,31 @@ class MetodologiaController {
 
   private static final List<String> CAVEATS =
       List.of(
-          "Pesos de combustible DE PARTIDA (comportamiento publicado de Anderson), sin calibrar aún;"
-              + " calibración en Fase 4.",
-          "f_tiempo (regeneración) incompleto sin los perímetros de EFFIS: solo los incendios semilla"
-              + " reducen el combustible; el resto queda neutro (f_tiempo=1.0).",
-          "comp_vulnerabilidad PROVISIONAL (población normalizada + suelo protegido); es un proxy"
-              + " débil, se sustituye en v2.0 con el módulo IUF/WUI.");
+          "El índice compuesto original (v1.0) NO batía al FWI crudo en la validación histórica."
+              + " v1.1 usa la meteo (percentil del FWI sobre la distribución provincial) como BASE y"
+              + " la estructura solo como MODULADOR acotado (±15 %).",
+          "La pendiente del modulador se DERIVA del efecto de la estructura sobre el TAMAÑO del"
+              + " incendio (correlación con la superficie quemada), NO se ajusta contra la ignición:"
+              + " con 15 positivos, ajustarla sería sobreajuste.",
+          "Pesos de combustible DE PARTIDA (comportamiento publicado de Anderson), sin calibrar aún.",
+          "comp_vulnerabilidad NO entra en el índice: mide EXPOSICIÓN («qué se pierde si arde»), no"
+              + " peligro; se muestra aparte como contexto. Proxy débil de población, se sustituye en"
+              + " v2.0 con el módulo IUF/WUI.",
+          "Con meteo absoluta el índice ya es interpretable como PELIGRO real: un mapa en rojo de hace"
+              + " días parece operativo, pero los datos llevan desfase. Ver el aviso de fecha.");
 
   private static final String DOCUMENTACION =
       "https://github.com/R0b3r7DEV/guaita/blob/main/docs/04-indice-peligro.md";
 
-  /** Pesos vigentes del índice y sus componentes. */
-  record Pesos(double estructural, double vulnerab, double poblacion, double espacioProtegido) {}
+  /** Modulador estructural v1.1: banda acotada, pendiente derivada del tamaño. */
+  record Modulador(double anclaje, double pendiente, double min, double max) {}
 
   /** Respuesta de {@code /metodologia}. */
   record Metodologia(
       String versionModelo,
       String formula,
-      Pesos pesos,
+      Modulador modulador,
       String normaPoblacion,
-      int meteoVentanaDias,
       List<Integer> niveles,
       List<String> etiquetasNivel,
       List<String> caveats,
@@ -56,19 +61,15 @@ class MetodologiaController {
 
   @GetMapping("/api/v1/metodologia")
   ResponseEntity<Metodologia> metodologia() {
+    ModeloParams.Indice i = params.indice();
     Metodologia m =
         new Metodologia(
             params.version(),
-            "indice = comp_meteo^0.5 * (peso_estructural*comp_estructural"
-                + " + peso_vulnerab*comp_vulnerab)^0.5",
-            new Pesos(
-                params.indice().pesoEstructural(),
-                params.indice().pesoVulnerab(),
-                params.vulnerab().pesoPoblacion(),
-                params.vulnerab().pesoEspacioProtegido()),
+            "indice = comp_meteo_abs · clip(1 + pendiente·(comp_estructural − anclaje), min, max)",
+            new Modulador(
+                i.moduladorAnclaje(), i.moduladorPendiente(), i.moduladorMin(), i.moduladorMax()),
             params.vulnerab().normaPoblacion().name().toLowerCase(),
-            params.meteo().ventanaDias(),
-            params.indice().niveles(),
+            i.niveles(),
             ETIQUETAS,
             CAVEATS,
             DOCUMENTACION,

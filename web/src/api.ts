@@ -65,14 +65,13 @@ const Detalle = z.object({
 const Metodologia = z.object({
   versionModelo: z.string(),
   formula: z.string(),
-  pesos: z.object({
-    estructural: z.number(),
-    vulnerab: z.number(),
-    poblacion: z.number(),
-    espacioProtegido: z.number(),
+  modulador: z.object({
+    anclaje: z.number(),
+    pendiente: z.number(),
+    min: z.number(),
+    max: z.number(),
   }),
   normaPoblacion: z.string(),
-  meteoVentanaDias: z.number(),
   niveles: z.array(z.number()),
   etiquetasNivel: z.array(z.string()),
   caveats: z.array(z.string()),
