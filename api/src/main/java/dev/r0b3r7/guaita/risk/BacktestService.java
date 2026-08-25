@@ -124,9 +124,7 @@ public class BacktestService {
     r.add(metrica("compuesto_meteo=absoluto", filas, f -> comb(f.cmAbs(), f)));
     r.add(
         metrica(
-            "compuesto_meteo=hibrido_geom",
-            filas,
-            f -> comb(Math.sqrt(f.cm() * f.cmAbs()), f)));
+            "compuesto_meteo=hibrido_geom", filas, f -> comb(Math.sqrt(f.cm() * f.cmAbs()), f)));
     r.add(metrica("compuesto_meteo=hibrido_max", filas, f -> comb(Math.max(f.cm(), f.cmAbs()), f)));
     // Bloque 3: estructura de combinación. Solo meteo (estructura como contexto, fuera del número)
     // y meteo modulada por la estructura en una banda acotada [0,8..1,2] en vez de multiplicador
@@ -247,8 +245,12 @@ public class BacktestService {
             fwi);
     Fila f = new Fila(2023, 82, 0, cmPct, cmAbs, ce, cv, 0, fwi, 0, false);
     return new double[] {
-      cmPct, cmAbs, comb(cmPct, f), comb(cmAbs, f),
-      comb(Math.sqrt(cmPct * cmAbs), f), comb(Math.max(cmPct, cmAbs), f)
+      cmPct,
+      cmAbs,
+      comb(cmPct, f),
+      comb(cmAbs, f),
+      comb(Math.sqrt(cmPct * cmAbs), f),
+      comb(Math.max(cmPct, cmAbs), f)
     };
   }
 }
