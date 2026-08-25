@@ -34,11 +34,11 @@ public class BacktestService {
       """;
 
   // Corrección de contaminación de etiquetas (b), con perímetros reales: un parte del EGIF es UN
-  // municipio de inicio, pero el fuego quema varios (Bejís marcó 9). Esos términos afectados —los que
-  // el PERÍMETRO del propio parte cubre con >=10 ha, salvo el de inicio— quedan FUERA de los
-  // negativos durante la ventana del incendio (ni positivos ni negativos): su día de quema no es un
-  // "no pasó nada" honesto. Enlace parte<->perímetro por numpif = numeroparte. Sustituye a la vieja
-  // aproximación por vecindad (ST_Touches), que excluía vecinos aunque no se quemaran.
+  // municipio de inicio, pero el fuego quema varios (Bejís marcó 9). Esos términos afectados
+  // —los que el PERÍMETRO del propio parte cubre con >=10 ha, salvo el de inicio— quedan FUERA
+  // de los negativos durante la ventana del incendio (ni positivos ni negativos): su día de quema
+  // no es un "no pasó nada" honesto. Enlace parte<->perímetro por numpif = numeroparte. Sustituye
+  // a la vieja aproximación por vecindad (ST_Touches), que excluía vecinos aunque no se quemaran.
   private static final String Q_EXCL =
       """
       drop table if exists _excl;
