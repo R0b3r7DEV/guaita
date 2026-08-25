@@ -18,6 +18,7 @@ MUNIS_CATASTRO="${MUNIS_CATASTRO:-12007}"   # piloto: Alfondeguilla (Espadán)
 USOS="${USOS:-'1_residential','2_agriculture'}"
 MIN_FREE_GB="${MIN_FREE_GB:-5}"             # mismo umbral que DiskGuard (docs/01)
 BASE="https://www.catastro.hacienda.gob.es/INSPIRE/Buildings/12"
+ATOM="https://www.catastro.hacienda.gob.es/INSPIRE/buildings/12/ES.SDGC.bu.atom_12.xml"
 DATA=/data/wui_gml
 run_sql() { psql -v ON_ERROR_STOP=1 -q "$@"; }
 
@@ -29,10 +30,8 @@ if [ "${libres_gb:-0}" -lt "$MIN_FREE_GB" ]; then
 fi
 
 mkdir -p "$DATA"
-# Nombre de carpeta del ATOM: "<cod>-<NOMBRE>"; se resuelve del ATOM de provincia.
-curl -fsSL --max-time 90 -A "Mozilla/5.0" "$BASE/../ES.SDGC.bu.atom_12.xml" -o "$DATA/atom_12.xml" 2>/dev/null \
-  || curl -fsSL --max-time 90 -A "Mozilla/5.0" \
-       "https://www.catastro.hacienda.gob.es/INSPIRE/buildings/12/ES.SDGC.bu.atom_12.xml" -o "$DATA/atom_12.xml"
+# El ATOM de provincia da la carpeta "<cod>-<NOMBRE>" y la URL del zip de cada municipio.
+curl -fsSL --max-time 90 -A "Mozilla/5.0" --retry 3 "$ATOM" -o "$DATA/atom_12.xml"
 
 for cod in ${MUNIS_CATASTRO//,/ }; do
   url=$(grep -oE "https://[^\"]*/$cod-[^\"]*/A\.ES\.SDGC\.BU\.$cod\.zip" "$DATA/atom_12.xml" | head -1)
