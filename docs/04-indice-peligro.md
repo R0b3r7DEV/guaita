@@ -427,6 +427,19 @@ tener poca superficie forestal: masa pequeña, población enorme al lado.
 > interfaz) se descarta al recortar tanto los espacios protegidos como el
 > denominador municipal a `mv_provincia_continental`.
 
+> **v1.1 · comp_vulnerab SALE del índice (docs/09).** El backtest mostró que la
+> vulnerabilidad no aporta al PELIGRO (es lastre neutro con el proxy de población),
+> y no debe: mide EXPOSICIÓN («qué se pierde si arde»), no peligro. Desde v1.1 el
+> índice es `comp_meteo_abs · modulador(comp_estructural)` y comp_vulnerab NO entra;
+> se sigue calculando y se muestra APARTE, como eje de «Exposición», etiquetado para
+> no confundirlo con el peligro.
+>
+> **El módulo IUF (Fase 5, doc 05) alimenta ESE eje de Exposición, no el de peligro.**
+> Cuando haya datos reales de interfaz urbano-forestal (edificaciones del Catastro ×
+> franja perimetral), sustituyen al proxy débil de población en el panel de
+> Exposición. **No vuelven a entrar en el índice de peligro.** Queda escrito para que
+> no se confunda al retomarlo.
+
 ---
 
 ## 4. Índice compuesto
