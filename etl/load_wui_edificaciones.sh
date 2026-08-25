@@ -43,8 +43,10 @@ for cod in ${MUNIS_CATASTRO//,/ }; do
   BLD=$(ls "d_$cod"/*building.gml 2>/dev/null | grep -iv part | head -1)
   [ -z "$BLD" ] && { echo "   $cod: sin building.gml"; continue; }
 
+  # El GML declara su propio SRS (Catastro INSPIRE = ETRS89/UTM 30N = 25830); NO forzar -s_srs
+  # (interpretaría los metros como grados). Solo reproyectar a 25830; la aserción confirma el SRID.
   ogr2ogr -f PostgreSQL "$PG" "$BLD" building \
-    -s_srs EPSG:4258 -t_srs EPSG:25830 \
+    -t_srs EPSG:25830 \
     -nln stg_edif -overwrite -nlt PROMOTE_TO_MULTI \
     -select reference,currentUse -lco GEOMETRY_NAME=geom --config PG_USE_COPY YES
 
