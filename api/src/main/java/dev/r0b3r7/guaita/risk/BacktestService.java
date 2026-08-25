@@ -131,9 +131,18 @@ public class BacktestService {
     // de rango completo.
     r.add(metrica("solo_meteo_percentil", filas, Fila::cm));
     r.add(metrica("solo_meteo_absoluto", filas, Fila::cmAbs));
-    r.add(metrica("modulador_sobre_percentil", filas, f -> modulador(f.cm(), f)));
-    r.add(metrica("modulador_sobre_absoluto", filas, f -> modulador(f.cmAbs(), f)));
+    r.add(metrica("modulador_ref_0.8_1.2", filas, f -> modulador(f.cmAbs(), f)));
+    // Forma FINAL v1.1: meteo absoluta × modulador lineal derivado del tamaño (b=0,00455, banda
+    // [0,85..1,15], anclaje mediana provincial 48,3). El arnés la VERIFICA, no la elige.
+    r.add(metrica("v1_1_final", filas, f -> f.cmAbs() * modLineal(f.ce())));
     return r;
+  }
+
+  // Modulador estructural v1.1: lineal, anclado en la mediana provincial (48,3), banda [0,85-1,15].
+  // b=0,00455 DERIVADO del efecto sobre el tamaño (pendiente conservadora 0,0091 del IC 95 %,
+  // amortiguada sqrt por la media geométrica), NO ajustado contra la ignición.
+  private static double modLineal(double ce) {
+    return Math.max(0.85, Math.min(1.15, 1.0 + 0.00455 * (ce - 48.3)));
   }
 
   // Compuesto multiplicativo (media geométrica): sqrt(meteo)·sqrt(0,65·ce+0,35·cv), meteo dada.
