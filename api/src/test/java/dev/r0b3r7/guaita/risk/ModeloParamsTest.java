@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 
-/** {@code model-params.yml} carga y bindea a {@link ModeloParams} con los valores de v1.0. */
+/** {@code model-params.yml} carga y bindea a {@link ModeloParams} con los valores de v1.1. */
 @Import(TestcontainersConfiguration.class)
 @SpringBootTest
 class ModeloParamsTest {
@@ -17,7 +17,7 @@ class ModeloParamsTest {
 
   @Test
   void cargaConLosValoresDeV1() {
-    assertEquals("v1.0", p.version());
+    assertEquals("v1.1", p.version());
     assertEquals(15, p.meteo().ventanaDias());
 
     // Combustible: el modelo 4 es el techo; el hueco sin dato usa un peso FIJO (no la media).
@@ -38,5 +38,11 @@ class ModeloParamsTest {
     assertEquals(0.35, p.indice().pesoVulnerab(), 1e-9);
     assertEquals(5, p.indice().niveles().size());
     assertEquals(100, p.indice().niveles().get(4));
+
+    // v1.1: modulador estructural (anclaje mediana provincial, banda acotada, pendiente derivada).
+    assertEquals(48.3, p.indice().moduladorAnclaje(), 1e-9);
+    assertEquals(0.00455, p.indice().moduladorPendiente(), 1e-9);
+    assertEquals(0.85, p.indice().moduladorMin(), 1e-9);
+    assertEquals(1.15, p.indice().moduladorMax(), 1e-9);
   }
 }

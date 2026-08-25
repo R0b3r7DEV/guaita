@@ -125,10 +125,11 @@ class MunicipiosControllerTest {
   void metodologiaExponeVersionYCaveats() throws Exception {
     mvc.perform(get("/api/v1/metodologia"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.versionModelo").value("v1.0"))
-        .andExpect(jsonPath("$.pesos.estructural").value(0.65))
+        .andExpect(jsonPath("$.versionModelo").value("v1.1"))
+        .andExpect(jsonPath("$.modulador.anclaje").value(48.3))
+        .andExpect(jsonPath("$.modulador.max").value(1.15))
         .andExpect(jsonPath("$.normaPoblacion").value("sqrt"))
-        .andExpect(jsonPath("$.caveats.length()").value(3))
+        .andExpect(jsonPath("$.caveats.length()").value(5))
         .andExpect(jsonPath("$.aviso").exists());
   }
 }
