@@ -23,6 +23,22 @@ ATOM="https://www.catastro.hacienda.gob.es/INSPIRE/buildings/12/ES.SDGC.bu.atom_
 DATA=/data/wui_gml
 run_sql() { psql -v ON_ERROR_STOP=1 -q "$@"; }
 
+# Percent-encode byte a byte: el ATOM es ISO-8859-1, y los términos con acento (ARAÑUEL) o espacio
+# (ATZENETA DEL MAESTRAT) rompen curl (espacio) y psql (byte Latin-1 = UTF-8 inválido). El servidor
+# acepta el percent-encode de los bytes (verificado: %D1 y %20 -> 200). Resultado: URL ASCII pura.
+urlenc() {
+  local s="$1" out="" i c hex
+  local LC_ALL=C
+  for (( i = 0; i < ${#s}; i++ )); do
+    c="${s:i:1}"
+    case "$c" in
+      [-A-Za-z0-9._/:]) out+="$c" ;;
+      *) printf -v hex '%%%02X' "'$c"; out+="$hex" ;;
+    esac
+  done
+  printf '%s' "$out"
+}
+
 # --- Guardia de disco (replica el umbral de DiskGuard para el ETL, no solo para el backfill) ---
 libres_gb=$(df -BG --output=avail "$( [ -d /data ] && echo /data || echo / )" | tail -1 | tr -dc '0-9')
 echo "==> Guardia de disco: ${libres_gb} GB libres (umbral ${MIN_FREE_GB} GB)."
@@ -44,7 +60,7 @@ echo "==> municipios a procesar: $(echo "$CODES" | wc -w)"
 for cod in $CODES; do
   url=$(grep -oE "https://[^\"]*/$cod-[^\"]*/A\.ES\.SDGC\.BU\.$cod\.zip" "$DATA/atom_12.xml" | head -1)
   [ -z "$url" ] && { echo "   $cod: sin entrada en el ATOM, se omite"; continue; }
-  url="${url// /%20}"   # muchos términos llevan espacios en la carpeta (curl los rechaza sin %20)
+  url=$(urlenc "$url")   # ASCII pura (espacios y acentos Latin-1 del ATOM -> %XX)
   # Reanudable: si ya se cargó este municipio (por su URL de origen), se salta (FORCE=1 recarga).
   if [ "$FORCE" != "1" ] && [ "$(psql -tAc "select 1 from edificacion where source_url = '$url' limit 1")" = "1" ]; then
     echo "   $cod: ya cargado, se salta"; continue
