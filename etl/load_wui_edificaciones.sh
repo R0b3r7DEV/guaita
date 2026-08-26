@@ -14,9 +14,10 @@ set -euo pipefail
 PGPORT="${PGPORT:-5432}"
 PG="PG:host=$PGHOST port=$PGPORT dbname=$PGDATABASE user=$PGUSER password=$PGPASSWORD"
 
-MUNIS_CATASTRO="${MUNIS_CATASTRO:-12007}"   # piloto: Alfondeguilla (Espadán)
+MUNIS_CATASTRO="${MUNIS_CATASTRO:-all}"     # 'all' = los 135 del ATOM; o lista de códigos catastro
 USOS="${USOS:-'1_residential','2_agriculture'}"
 MIN_FREE_GB="${MIN_FREE_GB:-5}"             # mismo umbral que DiskGuard (docs/01)
+FORCE="${FORCE:-0}"                         # 1 = recargar aunque ya esté (cartografía nueva)
 BASE="https://www.catastro.hacienda.gob.es/INSPIRE/Buildings/12"
 ATOM="https://www.catastro.hacienda.gob.es/INSPIRE/buildings/12/ES.SDGC.bu.atom_12.xml"
 DATA=/data/wui_gml
@@ -33,9 +34,20 @@ mkdir -p "$DATA"
 # El ATOM de provincia da la carpeta "<cod>-<NOMBRE>" y la URL del zip de cada municipio.
 curl -fsSL --max-time 90 -A "Mozilla/5.0" --retry 3 "$ATOM" -o "$DATA/atom_12.xml"
 
-for cod in ${MUNIS_CATASTRO//,/ }; do
+if [ "$MUNIS_CATASTRO" = "all" ]; then
+  CODES=$(grep -oE 'A\.ES\.SDGC\.BU\.[0-9]+\.zip' "$DATA/atom_12.xml" | grep -oE '[0-9]+' | sort -u)
+else
+  CODES="${MUNIS_CATASTRO//,/ }"
+fi
+echo "==> municipios a procesar: $(echo "$CODES" | wc -w)"
+
+for cod in $CODES; do
   url=$(grep -oE "https://[^\"]*/$cod-[^\"]*/A\.ES\.SDGC\.BU\.$cod\.zip" "$DATA/atom_12.xml" | head -1)
   [ -z "$url" ] && { echo "   $cod: sin entrada en el ATOM, se omite"; continue; }
+  # Reanudable: si ya se cargó este municipio (por su URL de origen), se salta (FORCE=1 recarga).
+  if [ "$FORCE" != "1" ] && [ "$(psql -tAc "select 1 from edificacion where source_url = '$url' limit 1")" = "1" ]; then
+    echo "   $cod: ya cargado, se salta"; continue
+  fi
   echo "==> $cod: $url"
   cd "$DATA"
   curl -fsSL --max-time 120 -A "Mozilla/5.0" --retry 3 -o "$cod.zip" "$url"
@@ -90,4 +102,20 @@ SQL
   n=$(psql -tAc "select count(*) from edificacion where source_url = '$url'")
   echo "   $cod: $n edificaciones (residencial+agrario) cargadas; GML crudo borrado."
 done
+
+echo "==> Aserciones provinciales…"
+psql -v ON_ERROR_STOP=1 <<'SQL'
+\set QUIET on
+do $$
+declare fuera int; inval int; nmun int; tot int;
+begin
+  select count(*) into fuera from edificacion where st_srid(geom) <> 25830;
+  if fuera <> 0 then raise exception '% edificaciones fuera de 25830', fuera; end if;
+  select count(*) into inval from edificacion where not st_isvalid(geom);
+  if inval <> 0 then raise exception '% geometrías inválidas', inval; end if;
+  select count(distinct ine_code), count(*) into nmun, tot from edificacion;
+  raise notice 'edificacion: % filas en % municipios (SRID 25830, todas válidas)', tot, nmun;
+  if nmun < 130 then raise exception 'solo % municipios con edificaciones (esperaba ~135)', nmun; end if;
+end $$;
+SQL
 echo "==> edificacion: OK."
