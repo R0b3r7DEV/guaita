@@ -101,7 +101,32 @@ de límites municipales).
 Devuelve la versión del modelo, los pesos vigentes y el enlace a la
 documentación. La transparencia metodológica es parte del producto.
 
+### `GET /wui/agregado/{ineCode}`  — PÚBLICO (T2)
+Recuentos de interfaz urbano-forestal por clase (`critico`, `incumple`, `cumple`),
+más `advertenciaMargen` **etiquetada como cautela técnica, no incumplimiento**, y
+`franja50Pendiente`. Interés general, no identifica a nadie. **200**; **404** si el
+municipio no existe.
+
 ## Endpoints autenticados
+
+### `POST /auth/login`  ·  `POST /auth/refresh`  ·  `POST /auth/logout`
+Login → access token (15 min, en el cuerpo) + refresh (cookie `HttpOnly; Secure;
+SameSite=Strict`, rotación). **401** genérico si las credenciales fallan (sin
+enumerar). Refresh rota el token; reutilización → revoca la familia → **401**.
+Logout revoca la familia. Rate limit 5/h por IP en login (docs/07).
+
+### `GET /wui/municipio/{ineCode}`  — JWT (T2)
+Detalle por edificación: **solo referencia catastral y coordenada** (lat/lon),
+clase, `franjaM` (30/50 según pendiente) y `advertenciaMargen`. **Nunca titularidad
+ni direcciones.** Un técnico solo ve SU término. **200** propio; **401** sin JWT;
+**403** JWT de otro término; **429** si supera el rate limit.
+
+### `GET /tiles/wui/{z}/{x}/{y}.mvt`  — JWT (T2)
+Geometría de edificaciones solo a **z ≥ 14** y autenticado, filtrada al término del
+usuario; por debajo de z 14, **204** (para la escala está el agregado, público).
+Cada feature lleva solo `ref_catastral` y `clase`. **401** sin JWT.
+
+### `POST /suscripciones`
 
 ### `POST /suscripciones`
 ```json

@@ -48,17 +48,42 @@ administrador manualmente. Esto elimina de la Fase 5 todo el flujo de alta,
 verificación de correo y recuperación de contraseña — superficie de ataque que no
 hace falta mantener.
 
-Modelo de usuario mínimo (a implementar en Fase 5, **no antes**):
+Modelo de usuario mínimo (`usuario`, V18):
 
 | Campo | Notas |
 |---|---|
 | `id` | uuid |
 | `email` | citext, único |
 | `password_hash` | Argon2id |
-| `ine_code` | municipio autorizado |
-| `rol` | p. ej. `tecnico` \| `admin` |
+| `ine_code` | municipio autorizado (NULL para `admin`, que ve todos) |
+| `rol` | `tecnico` \| `admin` |
 
-Decisión tomada; queda escrita, no implementada.
+**Implementado (Fase 5).** Detalles:
+
+- **Argon2id** perfil OWASP: memoria 19 MiB (`m=19456`), `t=2`, `p=1`, salt 16 B, hash
+  32 B. Equilibra resistencia a GPU con un login que no ahoga el hilo en un VPS
+  compartido con XPL0DAY.
+- **Access token** JWT HS256, 15 min, con claims `ine` y `rol`; el cliente lo guarda
+  EN MEMORIA. **Refresh** opaco (no JWT), 7 días, en cookie `HttpOnly; Secure;
+  SameSite=Strict`, con **rotación** y **detección de reutilización**: se guarda el
+  SHA-256 del token; cada refresh emite uno nuevo en la misma familia y marca el
+  anterior usado; si llega un token ya usado, es robo → se revoca la familia entera.
+- **Secreto JWT sin default** (`GUAITA_AUTH_JWT_SECRET`, ≥32 B): el arranque falla si
+  falta, no usa una clave conocida.
+- **CSRF desactivado** con fundamento: no hay sesión de servidor (stateless) y el
+  refresh viaja en cookie `SameSite=Strict`, que un POST cross-site no envía.
+- **Login sin enumeración:** mismo 401 y trabajo (un verify Argon2 siempre, exista o
+  no el email) para email o contraseña incorrectos. Rate limit 5/h por IP.
+
+**Alta de cuentas por administrador** (no hay auto-registro; runner gatillado):
+
+```
+docker compose run --rm \
+  -e SPRING_APPLICATION_JSON='{"guaita.auth.crear.run":true,
+     "guaita.auth.crear.email":"tecnico@alfondeguilla.es",
+     "guaita.auth.crear.password":"...",
+     "guaita.auth.crear.ine":"12007","guaita.auth.crear.rol":"tecnico"}' api
+```
 
 ## Cabeceras
 

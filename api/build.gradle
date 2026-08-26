@@ -24,6 +24,11 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-flyway'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+	// Control de acceso IUF (T2, docs/07): Spring Security + JWT (resource-server = decoder/encoder
+	// nimbus para el access token HS256) + BouncyCastle (Argon2id de contraseñas).
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+	implementation 'org.bouncycastle:bcprov-jdk18on:1.78.1'
 	// Parseo del JSON de Open-Meteo (Boot 4 no trae jackson-databind por el starter web).
 	implementation 'com.fasterxml.jackson.core:jackson-databind'
 	implementation 'org.flywaydb:flyway-database-postgresql'
@@ -40,6 +45,7 @@ dependencies {
 	// que la feature de Castelló viaja de verdad, no solo que el status es 200. En Maven Central
 	// (Apache-2.0); la alternativa no.ecc.vectortile solo está en JitPack (menos auditable).
 	testImplementation 'com.wdtinc:mapbox-vector-tile:3.1.0'
+	testImplementation 'org.springframework.security:spring-security-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
