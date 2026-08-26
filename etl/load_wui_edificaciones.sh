@@ -44,16 +44,19 @@ echo "==> municipios a procesar: $(echo "$CODES" | wc -w)"
 for cod in $CODES; do
   url=$(grep -oE "https://[^\"]*/$cod-[^\"]*/A\.ES\.SDGC\.BU\.$cod\.zip" "$DATA/atom_12.xml" | head -1)
   [ -z "$url" ] && { echo "   $cod: sin entrada en el ATOM, se omite"; continue; }
+  url="${url// /%20}"   # muchos términos llevan espacios en la carpeta (curl los rechaza sin %20)
   # Reanudable: si ya se cargó este municipio (por su URL de origen), se salta (FORCE=1 recarga).
   if [ "$FORCE" != "1" ] && [ "$(psql -tAc "select 1 from edificacion where source_url = '$url' limit 1")" = "1" ]; then
     echo "   $cod: ya cargado, se salta"; continue
   fi
   echo "==> $cod: $url"
   cd "$DATA"
-  curl -fsSL --max-time 120 -A "Mozilla/5.0" --retry 3 -o "$cod.zip" "$url"
+  if ! curl -fsSL --max-time 120 -A "Mozilla/5.0" --retry 3 -o "$cod.zip" "$url"; then
+    echo "   $cod: descarga falló, se omite (reanudable)"; continue
+  fi
   rm -rf "d_$cod"; mkdir "d_$cod"; unzip -o -q "$cod.zip" -d "d_$cod"
   BLD=$(ls "d_$cod"/*building.gml 2>/dev/null | grep -iv part | head -1)
-  [ -z "$BLD" ] && { echo "   $cod: sin building.gml"; continue; }
+  [ -z "$BLD" ] && { echo "   $cod: sin building.gml"; rm -rf "d_$cod" "$cod.zip"; continue; }
 
   # El GML declara su propio SRS (Catastro INSPIRE = ETRS89/UTM 30N = 25830); NO forzar -s_srs
   # (interpretaría los metros como grados). Solo reproyectar a 25830; la aserción confirma el SRID.
