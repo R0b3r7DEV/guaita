@@ -127,11 +127,12 @@ class AuthController {
         .build();
   }
 
+  // IP del cliente SIN confiar en un X-Forwarded-For arbitrario (sería spoofeable -> bypass del rate
+  // limit del login). Con server.forward-headers-strategy=native, Tomcat solo aplica el XFF cuando
+  // la conexión viene de un proxy interno de confianza (nginx), así que getRemoteAddr() ya trae la
+  // IP real del cliente. La app solo escucha en 127.0.0.1 (tras nginx); nginx limit_req es la barrera
+  // primaria y esto es la segunda.
   private static String ip(HttpServletRequest req) {
-    String xff = req.getHeader("X-Forwarded-For");
-    if (xff != null && !xff.isBlank()) {
-      return xff.split(",")[0].strip();
-    }
     return req.getRemoteAddr();
   }
 }

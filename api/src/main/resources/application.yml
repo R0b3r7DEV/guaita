@@ -29,6 +29,11 @@ spring:
     enabled: true
     # locations por defecto: classpath:db/migration (convención Spring).
 
+server:
+  # Detrás de nginx (proxy de confianza): Tomcat aplica X-Forwarded-* SOLO desde proxies internos,
+  # así getRemoteAddr() trae la IP real del cliente sin confiar en un XFF spoofeado (rate limit login).
+  forward-headers-strategy: native
+
 management:
   endpoints:
     web:
