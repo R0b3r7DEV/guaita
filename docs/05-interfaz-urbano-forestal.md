@@ -31,6 +31,23 @@ Consecuencias para el análisis (implementadas):
   y la amplía en industria de riesgo en viento fuerte. No modelado (filtramos a
   residencial+agrario; la reducción por muros exige inspección de campo).
 
+**Decreto 91/2023** (Reglamento de la Ley 3/1993 Forestal, DOGV 9634, CVE
+2023/7436), **art. 145 — Condiciones de seguridad en la interfaz urbano-forestal**
+(texto literal verificado):
+
+> Las urbanizaciones, los núcleos de población, las edificaciones y las
+> instalaciones […] situadas en terrenos forestales y en la Zona de Influencia
+> Forestal, habrán de mantener unas condiciones […]. **Para ello deberán cumplir
+> con las normas establecidas en la normativa sectorial de ordenación del
+> territorio, urbanismo y paisaje y de prevención de incendios forestales.**
+
+El art. 145 **no fija anchura propia: remite a la normativa urbanística** (el
+Anexo XI del TRLOTUP, ya citado). **Confirma, no cambia** el criterio 30/50 m. El
+Anexo XII del reglamento ("dimensiones de las fajas auxiliares") es de las fajas
+de **infraestructuras de transporte** (carreteras, pistas), no de la faja
+perimetral de edificios. **Punto 0 cerrado: ambos textos verificados desde fuentes
+oficiales gratuitas (BOE para el TRLOTUP, DOGV para el 91/2023).**
+
 **Redacción obligatoria en todo informe** (descargo literal): el análisis es una
 estimación geométrica automatizada a partir de cartografía oficial y **no
 constituye una certificación de cumplimiento normativo**, que corresponde al
