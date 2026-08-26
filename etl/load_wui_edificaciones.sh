@@ -70,7 +70,10 @@ for cod in $CODES; do
   if ! curl -fsSL --max-time 120 -A "Mozilla/5.0" --retry 3 -o "$cod.zip" "$url"; then
     echo "   $cod: descarga falló, se omite (reanudable)"; continue
   fi
-  rm -rf "d_$cod"; mkdir "d_$cod"; unzip -o -q "$cod.zip" -d "d_$cod"
+  rm -rf "d_$cod"; mkdir "d_$cod"
+  if ! unzip -o -q "$cod.zip" -d "d_$cod"; then
+    echo "   $cod: zip corrupto/incompleto, se omite (reanudable)"; rm -rf "d_$cod" "$cod.zip"; continue
+  fi
   BLD=$(ls "d_$cod"/*building.gml 2>/dev/null | grep -iv part | head -1)
   [ -z "$BLD" ] && { echo "   $cod: sin building.gml"; rm -rf "d_$cod" "$cod.zip"; continue; }
 
