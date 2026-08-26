@@ -92,10 +92,7 @@ class SeguridadConfig {
                     .anyRequest()
                     .authenticated())
         .oauth2ResourceServer(
-            oauth ->
-                oauth
-                    .jwt(jwt -> jwt.decoder(decoder))
-                    .authenticationEntryPoint(problemas))
+            oauth -> oauth.jwt(jwt -> jwt.decoder(decoder)).authenticationEntryPoint(problemas))
         .exceptionHandling(
             ex -> ex.authenticationEntryPoint(problemas).accessDeniedHandler(problemas));
     return http.build();

@@ -9,7 +9,10 @@ import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
 
-/** Emite el ACCESS token (JWT HS256, 15 min). El refresh es opaco (ver {@link RefreshTokenServicio}). */
+/**
+ * Emite el ACCESS token (JWT HS256, 15 min). El refresh es opaco (ver {@link
+ * RefreshTokenServicio}).
+ */
 @Service
 public class TokenService {
 

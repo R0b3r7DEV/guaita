@@ -87,8 +87,7 @@ class WuiController {
   @GetMapping(
       value = "/api/v1/wui/municipio/{ineCode}",
       produces = MediaType.APPLICATION_JSON_VALUE)
-  ResponseEntity<String> detalle(
-      @PathVariable String ineCode, @AuthenticationPrincipal Jwt jwt) {
+  ResponseEntity<String> detalle(@PathVariable String ineCode, @AuthenticationPrincipal Jwt jwt) {
     // Autorización por término: admin ve todos; el técnico solo el suyo (si no, 403).
     boolean admin = "admin".equals(jwt.getClaimAsString("rol"));
     if (!admin && !ineCode.equals(jwt.getClaimAsString("ine"))) {

@@ -88,7 +88,8 @@ class WuiAccessControlTest {
   @Test
   void detalleNoFiltraTitularidad() throws Exception {
     String cuerpo =
-        mvc.perform(bearer(get("/api/v1/wui/municipio/{ine}", INE), token(INE, "tecnico", futuro())))
+        mvc.perform(
+                bearer(get("/api/v1/wui/municipio/{ine}", INE), token(INE, "tecnico", futuro())))
             .andExpect(status().isOk())
             .andReturn()
             .getResponse()
@@ -96,8 +97,9 @@ class WuiAccessControlTest {
             .toLowerCase(Locale.ROOT);
     assertTrue(cuerpo.contains("refcatastral"), "debe llevar la referencia catastral");
     for (String prohibido :
-        new String[] {"titular", "propietario", "direccion", "dirección", "domicilio", "nif", "dni",
-          "apellido"}) {
+        new String[] {
+          "titular", "propietario", "direccion", "dirección", "domicilio", "nif", "dni", "apellido"
+        }) {
       assertFalse(cuerpo.contains(prohibido), "no debe filtrar '" + prohibido + "'");
     }
   }

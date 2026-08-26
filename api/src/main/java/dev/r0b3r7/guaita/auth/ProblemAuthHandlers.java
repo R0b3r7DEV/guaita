@@ -29,8 +29,7 @@ class ProblemAuthHandlers implements AuthenticationEntryPoint, AccessDeniedHandl
   }
 
   @Override
-  public void commence(
-      HttpServletRequest req, HttpServletResponse res, AuthenticationException ex)
+  public void commence(HttpServletRequest req, HttpServletResponse res, AuthenticationException ex)
       throws IOException {
     escribir(res, HttpStatus.UNAUTHORIZED, "No autenticado", "Se requiere autenticación válida.");
   }

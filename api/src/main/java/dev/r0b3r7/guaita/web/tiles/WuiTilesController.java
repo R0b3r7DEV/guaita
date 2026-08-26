@@ -61,8 +61,7 @@ class WuiTilesController {
     String ine = jwt.getClaimAsString("ine");
     jdbc.execute("set local statement_timeout = 3000");
     byte[] tile =
-        jdbc.queryForObject(
-            SQL, byte[].class, b.minX(), b.minY(), b.maxX(), b.maxY(), admin, ine);
+        jdbc.queryForObject(SQL, byte[].class, b.minX(), b.minY(), b.maxX(), b.maxY(), admin, ine);
     if (tile == null || tile.length == 0) {
       return ResponseEntity.noContent().build();
     }

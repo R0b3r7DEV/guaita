@@ -10,8 +10,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * Alta de cuentas por ADMINISTRADOR (docs/07): no hay auto-registro. Gatillado por {@code
- * guaita.auth.crear.run=true}; hashea la contraseña con Argon2id y hace upsert por email, luego sale.
- * Procedimiento (VPS):
+ * guaita.auth.crear.run=true}; hashea la contraseña con Argon2id y hace upsert por email, luego
+ * sale. Procedimiento (VPS):
  *
  * <pre>
  * docker compose run --rm \
