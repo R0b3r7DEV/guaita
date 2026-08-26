@@ -34,7 +34,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       FIRMS_MAP_KEY: ${FIRMS_MAP_KEY}
       AEMET_API_KEY: ${AEMET_API_KEY}
-      JWT_SECRET: ${JWT_SECRET}
+      # Secreto JWT del control de acceso IUF (docs/07). La app lo lee de guaita.auth.jwt-secret
+      # (relaxed binding <- GUAITA_AUTH_JWT_SECRET); sin default, el arranque falla si no se pone.
+      GUAITA_AUTH_JWT_SECRET: ${JWT_SECRET}
     ports:
       # En el VPS, API_BIND=172.17.0.1: la publica SOLO en la puerta del bridge de
       # Docker (la alcanza el reverse proxy del host, no Internet).
