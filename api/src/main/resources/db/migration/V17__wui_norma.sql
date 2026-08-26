@@ -17,5 +17,7 @@ alter table edificacion add column if not exists pendiente_pct numeric;
 alter table wui_edificacion drop constraint if exists wui_clase_ok;
 alter table wui_edificacion
   add column if not exists advertencia_margen boolean not null default false;
+-- El antiguo 'ajustado' era legalmente conforme -> pasa a 'cumple' (lo recalcula el análisis igual).
+update wui_edificacion set clase = 'cumple' where clase = 'ajustado';
 alter table wui_edificacion
   add constraint wui_clase_ok check (clase in ('critico', 'incumple', 'cumple'));
