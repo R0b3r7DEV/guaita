@@ -5,22 +5,36 @@ lista de direcciones con las que un ayuntamiento puede trabajar mañana.
 
 ## Base normativa
 
-El Decreto Legislativo 1/2021 (TRLOTUP), **anexo XI, Prevención de Incendios
-Forestales**, establece obligaciones de autoprotección para edificaciones en
-zona de influencia forestal, incluida la franja perimetral libre de vegetación
-susceptible de propagar el fuego.
+El Decreto Legislativo 1/2021 (TRLOTUP), **Anexo XI, Prevención de incendios
+forestales**, punto 1 (*Faja perimetral de protección*). **Texto literal
+verificado** sobre el consolidado del BOE (id DOGV-r-2021-90283), no de memoria:
 
-**Antes de generar informes con lenguaje normativo, verificar la redacción
-vigente del anexo XI y del Decreto 91/2023** (reglamento de la Ley Forestal), y
-citarla literalmente en el informe. La anchura exacta y las condiciones varían
-según el instrumento aplicable y el tipo de implantación. El sistema debe
-soportar una franja **parametrizable** (`franja_m`, por defecto 30) y registrar
-qué criterio se aplicó en cada análisis.
+> Toda urbanización, núcleo de población, edificación o instalación destinada a
+> uso residencial, industrial o terciario en terreno forestal o colindante al
+> mismo, deberán integrar las infraestructuras y medidas siguientes, de acuerdo
+> con el Real decreto 893/2013 […]. **1. Faja perimetral de protección.** […] se
+> deberá asegurar una **faja perimetral de protección mínima de 30 metros de
+> ancho, medida desde el límite exterior de la edificación**, instalación o
+> conjunto de las mismas a defender. […] Dicha distancia **se ampliará en función
+> de la pendiente del terreno, alcanzando, como mínimo, los 50 metros cuando la
+> pendiente sea superior al 30 %**.
 
-**Redacción obligatoria en todo informe:** el análisis es una estimación
-geométrica automatizada a partir de cartografía oficial y **no constituye una
-certificación de cumplimiento normativo**, que corresponde al órgano competente
-previa inspección.
+Consecuencias para el análisis (implementadas):
+
+- La franja **NO es 30 m uniformes**: es **30 m, y 50 m donde la pendiente > 30 %**.
+  Se aplica por edificación con la pendiente muestreada del MDT (gdaldem slope).
+- La vegetación de referencia es "terreno forestal o colindante" / "combustibles
+  forestales" → la capa PATFOR (`terreno_forestal`) es el proxy usado.
+- `franja_m` sigue siendo **parametrizable** y se registra por análisis; el
+  criterio por defecto es el del Anexo XI (30/50 según pendiente).
+- Pendiente: el propio Anexo XI reduce la franja hasta un 50 % si hay muros ≥1 m
+  y la amplía en industria de riesgo en viento fuerte. No modelado (filtramos a
+  residencial+agrario; la reducción por muros exige inspección de campo).
+
+**Redacción obligatoria en todo informe** (descargo literal): el análisis es una
+estimación geométrica automatizada a partir de cartografía oficial y **no
+constituye una certificación de cumplimiento normativo**, que corresponde al
+órgano competente previa inspección.
 
 ## Algoritmo
 
@@ -80,15 +94,20 @@ Notas de rendimiento:
 
 ## Clasificación de salida
 
-| Clase | Criterio | Color |
-|---|---|---|
-| Crítico | `dist_forestal_m = 0` (edificio dentro de masa forestal) | rojo |
-| Incumple | `dist < franja_m` | ámbar |
-| Ajustado | `franja_m <= dist < franja_m * 1.5` | amarillo |
-| Cumple | `dist >= franja_m * 1.5` | verde |
+La clase se ciñe a la NORMA: `franja_m` es 30 m (o 50 m si pendiente > 30 %).
 
-La clase "ajustado" existe porque la geometría catastral tiene error y una
-edificación a 31 m de la masa no está realmente a salvo.
+| Clase | Criterio | Significado |
+|---|---|---|
+| Crítico | `dist_forestal_m = 0` (edificio dentro de masa forestal) | incumplimiento (el peor) |
+| Incumple | `0 < dist < franja_m` | **incumplimiento legal** |
+| Cumple | `dist >= franja_m` | **cumple legalmente** |
+
+**`advertencia_margen`** (bandera, NO una clase de incumplimiento): edificación
+que **cumple** pero está cerca (`franja_m <= dist < franja_m · 1,5`). Es una
+**cautela técnica** por el error de la geometría catastral —una edificación a
+32 m en terreno llano cumple legalmente—, y se presenta claramente separada del
+incumplimiento. **El informe no puede sugerir que alguien incumple cuando
+legalmente cumple.**
 
 ## Salida: informe municipal
 
