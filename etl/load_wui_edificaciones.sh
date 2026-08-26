@@ -60,6 +60,9 @@ echo "==> municipios a procesar: $(echo "$CODES" | wc -w)"
 for cod in $CODES; do
   url=$(grep -oE "https://[^\"]*/$cod-[^\"]*/A\.ES\.SDGC\.BU\.$cod\.zip" "$DATA/atom_12.xml" | head -1)
   [ -z "$url" ] && { echo "   $cod: sin entrada en el ATOM, se omite"; continue; }
+  # El ATOM padea los nombres bilingües ("BENICASIM   BENICASSIM") con espacios múltiples, pero la
+  # carpeta real del servidor usa UNO solo -> colapsar antes de encodear (verificado con Benicàssim).
+  url=$(printf '%s' "$url" | tr -s ' ')
   url=$(urlenc "$url")   # ASCII pura (espacios y acentos Latin-1 del ATOM -> %XX)
   # Reanudable: si ya se cargó este municipio (por su URL de origen), se salta (FORCE=1 recarga).
   if [ "$FORCE" != "1" ] && [ "$(psql -tAc "select 1 from edificacion where source_url = '$url' limit 1")" = "1" ]; then
