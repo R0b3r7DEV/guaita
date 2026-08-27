@@ -130,7 +130,7 @@ class MunicipiosControllerTest {
         .andExpect(jsonPath("$.modulador.max").value(1.15))
         .andExpect(jsonPath("$.normaPoblacion").value("sqrt"))
         .andExpect(jsonPath("$.exposicion").exists())
-        .andExpect(jsonPath("$.caveats.length()").value(6))
+        .andExpect(jsonPath("$.caveats.length()").value(7))
         .andExpect(jsonPath("$.aviso").exists());
   }
 }
