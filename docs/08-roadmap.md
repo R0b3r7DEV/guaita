@@ -186,13 +186,41 @@ citados literalmente desde fuentes oficiales gratuitas (BOE, DOGV).
 
 ---
 
-## Fase 6 · Alertas y cierre (semana 12)
+## Fase 6 · Cierre (semana 12) — ✅ COMPLETADA (alertas DIFERIDAS, ver abajo)
 
-- [ ] Suscripciones con doble opt-in, baja en un clic.
-- [ ] Envío diario por umbral.
-- [ ] Política de privacidad y aviso legal.
-- [ ] README con capturas y explicación metodológica.
-- [ ] 30 días de operación sin intervención manual.
+- [x] README completo (qué es, contexto de Castellón, visor, IUF, **metodología** y
+      **resultados del backtest con sus limitaciones**, las dos tablas de IUF).
+- [x] Política de privacidad y aviso legal (docs/10; servicio público, sin dato
+      personal salvo logs del servidor, con base jurídica declarada).
+- [x] Caveats visibles en el visor (aviso de emergencias, desfase D-5, metodología).
+- [x] Operación autónoma verificada (scheduler diario ingiriendo, renovación de
+      certificados armada + dry-run, XPL0DAY intacto, disco holgado).
+- [ ] ~~Suscripciones + envío diario por umbral~~ → **DIFERIDO** (ver abajo).
+
+### Por qué las alertas por correo se DIFIEREN (no se sacrifican por prisa)
+
+Un correo es lo primero que la gente trata como operativo, y el índice va con **D-5**
+(reanálisis). Enviar «nivel 4 en su municipio» sobre datos de hace cinco días **es
+T7 (suplantación de autoridad) por correo**, y peor que en el visor: llega sin el
+contexto de los descargos. Análisis:
+
+- **Una alerta diaria por umbral sobre un índice D-5 no es honesta.** El único correo
+  honesto sobre ese dato sería un **boletín SEMANAL retrospectivo** (en pasado, con
+  los mismos descargos del visor, sin lenguaje imperativo), que casi nadie querría
+  recibir. Montar para eso un encargado del tratamiento, DPA, política de privacidad
+  ampliada, job de retención y flujo de baja es **coste de cumplimiento sin
+  contrapartida** en un proyecto sin usuarios reales.
+- **La alerta OPERATIVA depende de la Fase 3.5 (previsión), no del reanálisis.** Solo
+  un índice *previsto* y **validado con el mismo listón que el backtest** permite un
+  aviso honesto de «va a hacer peligro». No se adelanta la previsión por conveniencia:
+  un forecast sin validar es el mismo error de honestidad en otro sitio.
+- **El bloqueo es SEMÁNTICO, no técnico.** La vía de envío está resuelta: **Brevo o
+  Mailjet** (UE, tier gratuito suficiente, *encargado del tratamiento* sin
+  transferencia internacional, DPA estándar). Se retoma cuando exista el producto que
+  lo justifique.
+
+**Secuencia correcta cuando se retome:** Fase 3.5 (previsión) → **validación** →
+alertas (boletín/aviso sobre el índice previsto, marcado como estimación).
 
 ---
 
