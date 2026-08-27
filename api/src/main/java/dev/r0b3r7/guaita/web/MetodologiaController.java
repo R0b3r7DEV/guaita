@@ -29,14 +29,28 @@ class MetodologiaController {
               + " incendio (correlación con la superficie), NO se ajusta contra la ignición: con 15"
               + " positivos sería sobreajuste.",
           "Pesos de combustible DE PARTIDA (comportamiento publicado de Anderson), sin calibrar.",
-          "comp_vulnerabilidad NO entra en el índice: mide EXPOSICIÓN («qué se pierde si arde»), no"
-              + " peligro; va aparte como contexto. Proxy débil de población, se sustituye en v2.0"
-              + " con el módulo IUF/WUI.",
+          "La EXPOSICIÓN («qué hay en juego si arde») es un EJE APARTE del peligro y NO entra en el"
+              + " índice. Desde Fase 5 se basa en la interfaz urbano-forestal REAL (Catastro × franja"
+              + " del Anexo XI), no en el viejo proxy de población.",
+          "Exposición: estimación geométrica automatizada de cartografía oficial; NO es una"
+              + " certificación de cumplimiento, que corresponde al órgano competente previa"
+              + " inspección.",
+          "Exposición: la pendiente sale del MDT25 (25 m) que suaviza el relieve, así que SUBESTIMA"
+              + " la franja de 50 m en ladera; y parte de la geometría catastral, con su error"
+              + " posicional (de ahí la «cautela técnica», que no es incumplimiento).",
           "Con meteo absoluta el índice ya es interpretable como PELIGRO real: un mapa en rojo de"
               + " hace días parece operativo, pero los datos llevan desfase. Ver el aviso.");
 
   private static final String DOCUMENTACION =
       "https://github.com/R0b3r7DEV/guaita/blob/main/docs/04-indice-peligro.md";
+
+  // La exposición es un RATIO DIRECTO y definido, no un índice compuesto: edificaciones sin franja
+  // legal (crítico + incumple) sobre el total analizado del término.
+  private static final String EXPOSICION =
+      "Exposición = % de edificaciones (residencial + agrario) sin la franja de protección del Anexo"
+          + " XI del TRLOTUP (30 m; 50 m si pendiente > 30 %): crítico (dentro del monte) + incumple"
+          + " (< franja), sobre el total. Es un ratio directo e interpretable, no un índice compuesto."
+          + " La «cautela técnica» (cumple pero cerca) va aparte y NO es incumplimiento.";
 
   /** Modulador estructural v1.1: banda acotada, pendiente derivada del tamaño. */
   record Modulador(double anclaje, double pendiente, double min, double max) {}
@@ -47,6 +61,7 @@ class MetodologiaController {
       String formula,
       Modulador modulador,
       String normaPoblacion,
+      String exposicion,
       List<Integer> niveles,
       List<String> etiquetasNivel,
       List<String> caveats,
@@ -69,6 +84,7 @@ class MetodologiaController {
             new Modulador(
                 i.moduladorAnclaje(), i.moduladorPendiente(), i.moduladorMin(), i.moduladorMax()),
             params.vulnerab().normaPoblacion().name().toLowerCase(),
+            EXPOSICION,
             i.niveles(),
             ETIQUETAS,
             CAVEATS,

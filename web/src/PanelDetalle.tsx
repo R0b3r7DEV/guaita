@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { ApiError, detalleMunicipio, type Detalle } from "./api";
+import {
+  ApiError,
+  detalleMunicipio,
+  wuiAgregado,
+  type Detalle,
+  type WuiAgregado,
+} from "./api";
 import { colorNivel, etiquetaNivel } from "./niveles";
 import Serie30d from "./Serie30d";
 
@@ -24,6 +30,46 @@ function Componente({ nombre, valor }: { nombre: string; valor: number }) {
   );
 }
 
+/**
+ * Exposición basada en la interfaz REAL (IUF). La cifra de cabecera es un ratio DIRECTO y definido
+ * (edificaciones sin franja legal / total), no un índice compuesto inventado. La cautela técnica se
+ * muestra APARTE y etiquetada: no es un incumplimiento.
+ */
+function Exposicion({ a }: { a: WuiAgregado }) {
+  const sinFranja = a.porClase.critico + a.porClase.incumple;
+  const pct = a.total > 0 ? Math.round((1000 * sinFranja) / a.total) / 10 : 0;
+  return (
+    <>
+      <div className="expo-cifra">
+        <strong>{pct}%</strong> de las {a.total} edificaciones (residencial + agrario) sin franja de
+        protección legal
+      </div>
+      <ul className="expo-clases">
+        <li>
+          <span className="expo-pip expo-critico" /> Crítico (dentro del monte):{" "}
+          <strong>{a.porClase.critico}</strong>
+        </li>
+        <li>
+          <span className="expo-pip expo-incumple" /> Incumple (&lt; franja):{" "}
+          <strong>{a.porClase.incumple}</strong>
+        </li>
+        <li>
+          <span className="expo-pip expo-cumple" /> Cumple: <strong>{a.porClase.cumple}</strong>
+        </li>
+      </ul>
+      <p className="panel-nota expo-cautela">
+        Cautela técnica (aparte, <strong>NO incumplimiento</strong>): {a.advertenciaMargen} cumplen
+        pero cerca del límite. {a.franja50Pendiente} en pendiente &gt; 30 % (franja de 50 m).
+      </p>
+      <p className="panel-nota">
+        Interfaz urbano-forestal real (Catastro × franja del Anexo XI). Responde a «qué hay en juego
+        si arde», no a «cuán peligroso es hoy». <strong>No entra en el índice de peligro.</strong> El
+        detalle por edificación solo está disponible autenticado.
+      </p>
+    </>
+  );
+}
+
 export default function PanelDetalle({
   ineCode,
   onClose,
@@ -32,10 +78,13 @@ export default function PanelDetalle({
   onClose: () => void;
 }) {
   const [estado, setEstado] = useState<Estado>({ tipo: "cargando" });
+  // La exposición (IUF) carga aparte y no bloquea el peligro: son dos ejes distintos.
+  const [expo, setExpo] = useState<WuiAgregado | null>(null);
 
   useEffect(() => {
     let vivo = true;
     setEstado({ tipo: "cargando" });
+    setExpo(null);
     detalleMunicipio(ineCode)
       .then((d) => vivo && setEstado({ tipo: "ok", d }))
       .catch((e) => {
@@ -44,6 +93,9 @@ export default function PanelDetalle({
         }
         setEstado({ tipo: e instanceof ApiError && e.status === 503 ? "obsoleto" : "error" });
       });
+    wuiAgregado(ineCode)
+      .then((a) => vivo && setExpo(a))
+      .catch(() => {});
     return () => {
       vivo = false;
     };
@@ -59,12 +111,12 @@ export default function PanelDetalle({
       {estado.tipo === "obsoleto" && (
         <p className="panel-info">Índice no disponible para este municipio todavía.</p>
       )}
-      {estado.tipo === "ok" && <Contenido d={estado.d} />}
+      {estado.tipo === "ok" && <Contenido d={estado.d} expo={expo} />}
     </aside>
   );
 }
 
-function Contenido({ d }: { d: Detalle }) {
+function Contenido({ d, expo }: { d: Detalle; expo: WuiAgregado | null }) {
   const delta = d.calidadDato.deltaAltitudM;
   const sentido = delta >= 0 ? "por debajo de" : "por encima de";
   const sinComb = Math.round(d.calidadDato.fracSinCombustible * 100);
@@ -81,7 +133,9 @@ function Contenido({ d }: { d: Detalle }) {
       </header>
 
       <section>
-        <h3>Peligro</h3>
+        <h3>
+          Peligro <span className="panel-etq">cuán peligroso es hoy</span>
+        </h3>
         <Componente nombre="Meteo (percentil FWI provincial)" valor={d.componentes.meteo} />
         <Componente nombre="Estructural (combustible)" valor={d.componentes.estructural} />
         <p className="panel-nota">
@@ -93,13 +147,9 @@ function Contenido({ d }: { d: Detalle }) {
 
       <section>
         <h3>
-          Exposición <span className="panel-etq">contexto · no es peligro</span>
+          Exposición <span className="panel-etq">qué hay en juego · no es peligro</span>
         </h3>
-        <Componente nombre="Vulnerabilidad" valor={d.componentes.vulnerabilidad} />
-        <p className="panel-nota">
-          Responde a «qué se pierde si arde» (población, espacios protegidos), no a «cuán peligroso
-          es hoy». <strong>No entra en el índice</strong>; se muestra aparte como contexto.
-        </p>
+        {expo ? <Exposicion a={expo} /> : <p className="panel-nota">Cargando interfaz…</p>}
       </section>
 
       <section>

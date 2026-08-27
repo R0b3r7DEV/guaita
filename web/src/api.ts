@@ -72,6 +72,7 @@ const Metodologia = z.object({
     max: z.number(),
   }),
   normaPoblacion: z.string(),
+  exposicion: z.string(),
   niveles: z.array(z.number()),
   etiquetasNivel: z.array(z.string()),
   caveats: z.array(z.string()),
@@ -79,11 +80,29 @@ const Metodologia = z.object({
   aviso: z.string(),
 });
 
+// Exposición basada en interfaz real (IUF, docs/05). Agregado PÚBLICO: recuentos por clase. El
+// detalle por edificación va tras JWT y no aparece en el visor público (T2, docs/07).
+const WuiAgregado = z.object({
+  ineCode: z.string(),
+  total: z.number(),
+  porClase: z.object({
+    critico: z.number(),
+    incumple: z.number(),
+    cumple: z.number(),
+  }),
+  advertenciaMargen: z.number(),
+  franja50Pendiente: z.number(),
+  nota: z.string(),
+  versionAnalisis: z.string().nullable(),
+  descargo: z.string(),
+});
+
 export type MunicipioResumen = z.infer<typeof MunicipioResumen>;
 export type Detalle = z.infer<typeof Detalle>;
 export type PuntoSerie = z.infer<typeof PuntoSerie>;
 export type Metodologia = z.infer<typeof Metodologia>;
 export type Lista = z.infer<typeof Lista>;
+export type WuiAgregado = z.infer<typeof WuiAgregado>;
 
 async function pedir<T>(ruta: string, esquema: z.ZodType<T>): Promise<T> {
   const r = await fetch(`${ORIGIN}${ruta}`, { headers: { Accept: "application/json" } });
@@ -107,3 +126,5 @@ export const listaMunicipios = () => pedir("/api/v1/municipios", Lista);
 export const detalleMunicipio = (ine: string) =>
   pedir(`/api/v1/municipios/${ine}`, Detalle);
 export const metodologia = () => pedir("/api/v1/metodologia", Metodologia);
+export const wuiAgregado = (ine: string) =>
+  pedir(`/api/v1/wui/agregado/${ine}`, WuiAgregado);

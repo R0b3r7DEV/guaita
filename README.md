@@ -22,21 +22,26 @@ de incendios de la provincia.
 **https://guaita.xpl0day.com**
 
 Visor coropleto de los 135 términos de Castellón por **nivel de peligro** (1 Bajo
-→ 5 Extremo). Al clicar un municipio, un panel desglosa los tres componentes del
-índice (meteo, estructural, vulnerabilidad), los códigos FWI del día, la serie de
-30 días y las banderas. La fecha del dato y el aviso de "no es un sistema de
-emergencias" están siempre visibles.
+→ 5 Extremo). Al clicar un municipio, el panel separa **Peligro** («cuán peligroso
+es hoy»: meteo + estructural) de **Exposición** («qué hay en juego si arde»: la
+interfaz urbano-forestal real), más los códigos FWI del día, la serie de 30 días y
+las banderas. La fecha del dato y el aviso de "no es un sistema de emergencias" están
+siempre visibles.
+
+**Índice v1.1 (docs/09):** `comp_meteo_abs · modulador(comp_estructural)`. El
+compuesto original no batía al FWI crudo, así que la **meteo absoluta** es la base y
+la **estructura** solo la modula en una banda acotada, con la pendiente derivada del
+efecto sobre el TAMAÑO del incendio (no ajustada contra la ignición).
 
 **Limitaciones honestas (también en el propio visor → «Metodología y
 limitaciones»):**
 - **Pesos de combustible sin calibrar** — valores de partida (comportamiento
-  publicado de Anderson); la calibración es la Fase 4.
-- **`f_tiempo` incompleto sin EFFIS** — mientras el WFS de perímetros no es
-  accesible, solo los incendios semilla reducen el combustible; por eso el top-10
-  de hoy está encabezado por municipios de la Serra d'Espadà que ardieron en 2026
-  pero cuyo perímetro real aún no está cargado.
-- **`comp_vulnerab` provisional** — población normalizada (proxy débil: mide gente
-  en casco urbano) + suelo protegido; se sustituye por el módulo IUF en v2.0.
+  publicado de Anderson).
+- **`f_tiempo` real** desde los perímetros ICV/GVA (1993-2024): la validación
+  histórica se hizo con etiquetas limpias, no con las semillas.
+- **La exposición NO entra en el índice** — v1.1 separó peligro y exposición a
+  propósito; la exposición se alimenta del módulo IUF (arriba), no de un proxy de
+  población.
 - El índice se calcula sobre meteo de reanálisis con ~5 días de latencia (no es
   tiempo real, T7); cada dato va etiquetado con su fecha.
 
@@ -62,6 +67,40 @@ peligro llega en la Fase 3 sin rehacer la capa (las teselas ya declaran
      imagen fabricada. -->
 > _Captura del visor: pendiente de `docs/img/visor.png` — se obtiene con el stack
 > levantado y sembrado (`make up && make seed`), sobre `http://localhost:5173`._
+
+## Interfaz urbano-forestal (IUF)
+
+Para cada una de las **188.215 edificaciones** (residencial + agrario) de los 135
+municipios, cruza la geometría del **Catastro INSPIRE** con la capa forestal (PATFOR)
+y clasifica según la **franja perimetral del Anexo XI del TRLOTUP** (30 m; **50 m si
+la pendiente > 30 %**, muestreada del MDT25). El **Decreto 91/2023 art. 145** remite
+a esa misma norma, sin fijar anchura propia (ambos textos citados literalmente desde
+BOE/DOGV). Salida: agregado por municipio (**público**) e informe PDF por término
+(**tras JWT**, solo del término autorizado). Detalle por edificación: solo autenticado.
+
+**Provincia: el 10,2 % de las edificaciones no tiene la franja legal** (crítico +
+incumple). Dos vistas complementarias:
+
+| Top por % sin franja (≥20 edif.) | % | | Top por edif. CRÍTICAS (dentro del monte) | nº |
+|---|---|---|---|---|
+| Palanques | 93,2 | | la Vall d'Uixó | 230 |
+| Higueras | 90,3 | | Onda | 181 |
+| Castillo de Villamalefa | 76,6 | | l'Alcora | 162 |
+| Pavías | 66,7 | | Llucena | 139 |
+| Alfondeguilla | 65,1 | | Sierra Engarcerán | 124 |
+| Alcudia de Veo | 64,3 | | Villahermosa del Río | 123 |
+
+El **%** encabeza pueblos de montaña diminutos (todo el núcleo en el monte); el
+**crítico absoluto** encabeza pueblos grandes con más casas literalmente dentro del
+monte — la vista más accionable para un ayuntamiento.
+
+**Límites (escritos también en cada informe):** estimación geométrica automatizada,
+**NO** una certificación de cumplimiento (corresponde al órgano competente). La
+pendiente del MDT25 (25 m) suaviza el relieve → el análisis **subestima** la franja
+de 50 m en ladera, no la sobreestima. Parte de geometría catastral con error
+posicional (de ahí la «cautela técnica», que **no** es incumplimiento). No hay
+`n_vias_evacuacion` (requeriría una capa de carreteras). La exposición es un **eje
+aparte del peligro** y **no** vuelve al índice (v1.1 separó ambos ejes).
 
 ## Stack
 

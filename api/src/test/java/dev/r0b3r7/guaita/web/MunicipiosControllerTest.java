@@ -129,7 +129,8 @@ class MunicipiosControllerTest {
         .andExpect(jsonPath("$.modulador.anclaje").value(48.3))
         .andExpect(jsonPath("$.modulador.max").value(1.15))
         .andExpect(jsonPath("$.normaPoblacion").value("sqrt"))
-        .andExpect(jsonPath("$.caveats.length()").value(5))
+        .andExpect(jsonPath("$.exposicion").exists())
+        .andExpect(jsonPath("$.caveats.length()").value(6))
         .andExpect(jsonPath("$.aviso").exists());
   }
 }

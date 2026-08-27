@@ -255,6 +255,45 @@ body {
   margin-left: 0.4rem;
   vertical-align: middle;
 }
+.expo-cifra {
+  font-size: 0.95rem;
+  line-height: 1.4;
+  margin: 0.2rem 0 0.5rem;
+}
+.expo-cifra strong {
+  font-size: 1.5rem;
+}
+.expo-clases {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.4rem;
+  font-size: 0.85rem;
+}
+.expo-clases li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.1rem 0;
+}
+.expo-pip {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  flex: none;
+}
+.expo-critico {
+  background: #e02b1f;
+}
+.expo-incumple {
+  background: #f0861b;
+}
+.expo-cumple {
+  background: #2e7d32;
+}
+.expo-cautela {
+  border-left: 3px solid var(--muted);
+  padding-left: 0.5rem;
+}
 
 .comp {
   margin-bottom: 0.5rem;

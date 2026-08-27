@@ -44,11 +44,16 @@ export default function PanelMetodologia({ onClose }: { onClose: () => void }) {
                 {m.modulador.anclaje} (mediana provincial). Solo mueve a los extremos.
               </li>
               <li>
-                <strong>Vulnerabilidad</strong>: exposición, fuera del índice (normalización de
-                población: {m.normaPoblacion}). Se muestra como contexto.
+                <strong>Exposición</strong>: eje APARTE del peligro, no entra en el índice (ver
+                abajo). Ya no es el proxy de población, sino la interfaz real.
               </li>
               <li>Niveles (topes): {m.niveles.join(" · ")}</li>
             </ul>
+
+            <h3>
+              Exposición <span className="panel-etq">qué hay en juego · no es peligro</span>
+            </h3>
+            <p>{m.exposicion}</p>
 
             <h3>Limitaciones conocidas</h3>
             <ul className="metodo-caveats">

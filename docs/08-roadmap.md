@@ -153,17 +153,36 @@ dashboard.
 
 ---
 
-## Fase 5 · Interfaz urbano-forestal (semanas 9–11)
+## Fase 5 · Interfaz urbano-forestal (semanas 9–11) — ✅ COMPLETADA (desplegada)
 
-- [ ] ETL del Catastro INSPIRE por municipio.
-- [ ] Algoritmo de franja perimetral en PostGIS.
-- [ ] Clasificación y agregados por término.
-- [ ] Informe PDF con descargo de responsabilidad.
-- [ ] JWT + control de acceso al detalle.
-- [ ] Realimentar `comp_vulnerab` con los datos reales de IUF.
+- [x] ETL del Catastro INSPIRE por municipio (135, provincial; 188.215 edificaciones
+      residencial+agrario; V16). Gotchas resueltos: ATOM en ISO-8859-1, nombres
+      bilingües padeados, HTML con 200, reproyección (el GML ya declara 25830).
+- [x] Algoritmo de franja perimetral en PostGIS **según la norma**: Anexo XI del
+      TRLOTUP (30 m; **50 m si pendiente > 30 %**, muestreada del MDT25; V17). Sin
+      `ST_Union` (capa forestal ya subdividida). ~114 s los 135.
+- [x] Clasificación (crítico/incumple/cumple + `advertencia_margen` como CAUTELA
+      técnica, no incumplimiento) y agregados por término.
+- [x] Informe PDF (OpenPDF) con los tres avisos en la 1ª página (descargo, MDT25 que
+      SUBESTIMA, error catastral), cita literal del Anexo XI y remisión del art. 145
+      del Decreto 91/2023, mapa y tabla por distancia (solo ref catastral + coord).
+- [x] JWT + control de acceso al detalle (T2): agregado público, detalle y PDF tras
+      JWT y solo del término autorizado (401/403 verificados en vivo y en tests).
+- [x] Exposición realimentada con datos reales de IUF **en el panel del visor** (%
+      de edificaciones sin franja legal; ratio directo, no índice compuesto).
 
-**Criterio:** informe descargable de un municipio de prueba (sugerencia:
-Alfondeguilla o Eslida, pequeños y con interfaz clara).
+**Verificación normativa:** ambos textos (Anexo XI del TRLOTUP y Decreto 91/2023)
+citados literalmente desde fuentes oficiales gratuitas (BOE, DOGV).
+
+**Qué quedó FUERA (documentado):**
+- **No hay `n_vias_evacuacion`**: requiere una capa de carreteras/accesos que no se
+  cargó. El análisis de franja no lo necesita; era un factor del comp_vulnerab v1.0.
+- **`comp_vulnerab` ya no existe como tal en el índice**: v1.1 sacó la vulnerabilidad
+  del número de peligro (era lastre neutro con el proxy de población). La exposición
+  es ahora un EJE APARTE alimentado por la interfaz real, que **no vuelve** al índice.
+- La reducción de franja por muros ≥1 m (Anexo XI) no se modela (exige inspección).
+
+**Criterio cumplido:** informe descargable de Alfondeguilla (12007), 10 páginas.
 
 ---
 
