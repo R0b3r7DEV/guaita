@@ -36,8 +36,7 @@ class WuiInformeController {
   }
 
   @GetMapping("/api/v1/wui/informe/{ineCode}.pdf")
-  ResponseEntity<byte[]> informe(
-      @PathVariable String ineCode, @AuthenticationPrincipal Jwt jwt) {
+  ResponseEntity<byte[]> informe(@PathVariable String ineCode, @AuthenticationPrincipal Jwt jwt) {
     boolean admin = "admin".equals(jwt.getClaimAsString("rol"));
     if (!admin && !ineCode.equals(jwt.getClaimAsString("ine"))) {
       throw new AccessDeniedException("No autorizado para el término " + ineCode);
@@ -56,10 +55,7 @@ class WuiInformeController {
         .contentType(MediaType.APPLICATION_PDF)
         .header(
             HttpHeaders.CONTENT_DISPOSITION,
-            ContentDisposition.attachment()
-                .filename("iuf-" + ineCode + ".pdf")
-                .build()
-                .toString())
+            ContentDisposition.attachment().filename("iuf-" + ineCode + ".pdf").build().toString())
         .body(pdf);
   }
 }

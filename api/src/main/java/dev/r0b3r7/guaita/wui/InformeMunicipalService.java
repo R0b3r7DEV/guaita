@@ -7,8 +7,6 @@ import com.lowagie.text.Image;
 import com.lowagie.text.PageSize;
 import com.lowagie.text.Paragraph;
 import com.lowagie.text.Phrase;
-import com.lowagie.text.Rectangle;
-import com.lowagie.text.pdf.PdfContentByte;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfTemplate;
@@ -23,9 +21,10 @@ import org.springframework.stereotype.Service;
 
 /**
  * Informe municipal de interfaz urbano-forestal en PDF (docs/05). PRIVACIDAD (T2): solo referencia
- * catastral y coordenada, nunca titularidad. Los TRES avisos (descargo, limitación del MDT25 y error
- * de la geometría catastral) van en la PRIMERA página, no en un anexo. La advertencia de margen se
- * separa VISUALMENTE de los incumplimientos: una edificación a 32 m en llano CUMPLE legalmente.
+ * catastral y coordenada, nunca titularidad. Los TRES avisos (descargo, limitación del MDT25 y
+ * error de la geometría catastral) van en la PRIMERA página, no en un anexo. La advertencia de
+ * margen se separa VISUALMENTE de los incumplimientos: una edificación a 32 m en llano CUMPLE
+ * legalmente.
  */
 @Service
 public class InformeMunicipalService {
@@ -70,7 +69,8 @@ public class InformeMunicipalService {
   /** Genera el PDF del término. */
   public byte[] generar(String ineCode) {
     String nombre =
-        jdbc.queryForObject("select nombre from municipio where ine_code = ?", String.class, ineCode);
+        jdbc.queryForObject(
+            "select nombre from municipio where ine_code = ?", String.class, ineCode);
     Map<String, Object> ag =
         jdbc.queryForMap(
             "select count(*) total,"
@@ -117,8 +117,11 @@ public class InformeMunicipalService {
             "Franja perimetral de protección legal · término " + ine, font(10, Font.NORMAL, GRIS)));
     doc.add(
         new Paragraph(
-            "Versión del análisis: " + str(ag.get("version")) + " · cartografía: Catastro INSPIRE +"
-                + " PATFOR + MDT25 · informe generado el " + LocalDate.now(),
+            "Versión del análisis: "
+                + str(ag.get("version"))
+                + " · cartografía: Catastro INSPIRE +"
+                + " PATFOR + MDT25 · informe generado el "
+                + LocalDate.now(),
             font(9, Font.NORMAL, GRIS)));
     doc.add(espacio(8));
   }
@@ -281,7 +284,9 @@ public class InformeMunicipalService {
     if (pts.isEmpty()) {
       return null;
     }
-    double minx = Double.MAX_VALUE, miny = Double.MAX_VALUE, maxx = -Double.MAX_VALUE,
+    double minx = Double.MAX_VALUE,
+        miny = Double.MAX_VALUE,
+        maxx = -Double.MAX_VALUE,
         maxy = -Double.MAX_VALUE;
     for (Map<String, Object> p : pts) {
       double x = (Double) p.get("x");

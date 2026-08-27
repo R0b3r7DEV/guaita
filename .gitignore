@@ -48,3 +48,6 @@ Thumbs.db
 
 # --- Logs locales ---
 *.log
+
+# Credenciales de cuentas de prueba (solo en el VPS, nunca en el repo)
+.secrets/
