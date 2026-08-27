@@ -29,6 +29,9 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
 	implementation 'org.bouncycastle:bcprov-jdk18on:1.78.1'
+	// Informe municipal IUF en PDF (docs/05). OpenPDF (LGPL/MPL): apto para repo público, sin la
+	// AGPL de iText 7. API clásica com.lowagie.text, estable y documentada.
+	implementation 'com.github.librepdf:openpdf:1.3.35'
 	// Parseo del JSON de Open-Meteo (Boot 4 no trae jackson-databind por el starter web).
 	implementation 'com.fasterxml.jackson.core:jackson-databind'
 	implementation 'org.flywaydb:flyway-database-postgresql'

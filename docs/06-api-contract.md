@@ -139,8 +139,12 @@ Responde **202** siempre, exista el email o no (no filtrar existencia).
 ### `DELETE /suscripciones/{id}?token=`
 Baja en un clic, sin login. Token de un solo uso con caducidad.
 
-### `GET /municipios/{ineCode}/iuf/informe.pdf`
-Informe completo del término. Requiere JWT. Rate limit estricto.
+### `GET /wui/informe/{ineCode}.pdf`  — JWT (T2)
+Informe municipal IUF en PDF: avisos (descargo + limitación MDT25 + error catastral)
+en la primera página, cita literal del Anexo XI y remisión del art. 145, resumen por
+clase con la cautela técnica separada, mapa del término, y tabla por distancia
+(referencia catastral + coordenada, nada más). Requiere JWT, **solo del término
+autorizado** (otro término → **403**), rate limit 10/hora/usuario.
 
 ## Códigos de error
 

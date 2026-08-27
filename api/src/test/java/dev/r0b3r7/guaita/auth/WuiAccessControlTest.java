@@ -3,6 +3,7 @@ package dev.r0b3r7.guaita.auth;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import dev.r0b3r7.guaita.TestcontainersConfiguration;
@@ -127,6 +128,27 @@ class WuiAccessControlTest {
     String manipulado = valido.substring(0, valido.length() - 1) + (ultimo == 'A' ? 'B' : 'A');
     mvc.perform(bearer(get("/api/v1/wui/municipio/{ine}", INE), manipulado))
         .andExpect(status().isUnauthorized());
+  }
+
+  // h) Informe PDF sin token -> 401.
+  @Test
+  void informeSinTokenDa401() throws Exception {
+    mvc.perform(get("/api/v1/wui/informe/{ine}.pdf", INE)).andExpect(status().isUnauthorized());
+  }
+
+  // i) Informe PDF de otro término -> 403 (igual que el detalle JSON).
+  @Test
+  void informeDeOtroTerminoDa403() throws Exception {
+    mvc.perform(bearer(get("/api/v1/wui/informe/{ine}.pdf", INE), token(OTRO, "tecnico", futuro())))
+        .andExpect(status().isForbidden());
+  }
+
+  // j) Informe PDF del término propio -> 200 application/pdf.
+  @Test
+  void informePropioEsPdf() throws Exception {
+    mvc.perform(bearer(get("/api/v1/wui/informe/{ine}.pdf", INE), token(INE, "tecnico", futuro())))
+        .andExpect(status().isOk())
+        .andExpect(header().string("Content-Type", "application/pdf"));
   }
 
   // --- utilidades ---
