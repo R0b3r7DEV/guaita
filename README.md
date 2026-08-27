@@ -58,9 +58,10 @@ planifica fueron redactados entre 2007 y 2013 y actualizados en 2013–2014.
 
 Los 135 términos de la provincia en un visor MapLibre servido por teselas
 vectoriales propias (`ST_AsMVT` desde PostGIS, sin `pg_tileserv` ni token de
-Mapbox). Clic en un término muestra su nombre y comarca; el coropleto por nivel de
-peligro llega en la Fase 3 sin rehacer la capa (las teselas ya declaran
-`promoteId: 'ine_code'`, ADR-06).
+Mapbox). Coropleto por nivel de peligro; el estado dinámico (índice, nivel) viaja
+por JSON aparte y se une en cliente por `ine_code` (las teselas declaran
+`promoteId: 'ine_code'`, ADR-06), así que actualizar el índice a diario no
+invalida las teselas, que se cachean un año.
 
 <!-- Captura pendiente: docs/img/visor.png. Se genera levantando el stack con datos
      (make up && make seed) y fotografiando http://localhost:5173. No se incluye una
@@ -81,7 +82,7 @@ BOE/DOGV). Salida: agregado por municipio (**público**) e informe PDF por térm
 **Provincia: el 10,2 % de las edificaciones no tiene la franja legal** (crítico +
 incumple). Dos vistas complementarias:
 
-| Top por % sin franja (≥20 edif.) | % | | Top por edif. CRÍTICAS (dentro del monte) | nº |
+| Top-10 por % sin franja (≥20 edif.) | % | | Top-10 por edif. CRÍTICAS (dentro del monte) | nº |
 |---|---|---|---|---|
 | Palanques | 93,2 | | la Vall d'Uixó | 230 |
 | Higueras | 90,3 | | Onda | 181 |
@@ -89,6 +90,10 @@ incumple). Dos vistas complementarias:
 | Pavías | 66,7 | | Llucena | 139 |
 | Alfondeguilla | 65,1 | | Sierra Engarcerán | 124 |
 | Alcudia de Veo | 64,3 | | Villahermosa del Río | 123 |
+| Vallibona | 62,5 | | Culla | 121 |
+| Xodos/Chodos | 58,8 | | Morella | 106 |
+| Llucena | 56,3 | | Segorbe | 105 |
+| Fuentes de Ayódar | 55,6 | | Ares del Maestrat | 103 |
 
 El **%** encabeza pueblos de montaña diminutos (todo el núcleo en el monte); el
 **crítico absoluto** encabeza pueblos grandes con más casas literalmente dentro del
@@ -101,6 +106,57 @@ de 50 m en ladera, no la sobreestima. Parte de geometría catastral con error
 posicional (de ahí la «cautela técnica», que **no** es incumplimiento). No hay
 `n_vias_evacuacion` (requeriría una capa de carreteras). La exposición es un **eje
 aparte del peligro** y **no** vuelve al índice (v1.1 separó ambos ejes).
+
+## Metodología (resumen)
+
+- **FWI canadiense implementado desde las ecuaciones** de Van Wagner & Pickett
+  (1985, FTR 33), no de una librería: reproduce la tabla de referencia de 49 días
+  con `max|diff| < 0,1` en los seis códigos. Mediodía fijado a 12:00 UTC (criterio
+  EFFIS); latitud de Castellón (40 °N) usa los coeficientes estándar canadienses.
+- **Cadena continua.** Los códigos FWI son recursivos (arrastran humedad de días
+  previos). La serie es UNA sola desde 2005-01-01: el backfill histórico y el job
+  diario encadenan sin reinicio en la frontera (verificado: DC 13→14-ago sin reset).
+  Los ~30 primeros días son «calentamiento» y se excluyen.
+- **Meteo:** Open-Meteo ERA5-Seamless (reanálisis), fuente única para histórico y
+  operación → sin desajuste de percentiles calibración↔evaluación. Latencia ~5 días.
+- **Índice v1.1:** `comp_meteo_abs · modulador(comp_estructural)`. `comp_meteo_abs`
+  es el percentil del FWI sobre la distribución **provincial** (conserva la magnitud
+  estacional). El **modulador estructural** es lineal y acotado, con la pendiente
+  **derivada del efecto de la estructura sobre el TAMAÑO** del incendio (Spearman
+  0,616; extremo prudente del IC; amortiguado por la media geométrica), **no ajustada
+  contra la ignición** (con 15 positivos sería sobreajuste). Los niveles 1–5 salen
+  en cuasi-quintiles porque el índice es, por construcción, un percentil de peligro.
+
+## Resultados de la validación (backtest, docs/09)
+
+Positivos = pares (municipio, fecha) de incendios ≥ 100 ha (EGIF/MITECO 2005-2022);
+negativos = el resto de la temporada; partición **temporal** (2005-2015 / 2016-2022,
+nunca aleatoria); desbalance extremo → AUC-ROC + AUC-PR con IC por bootstrap.
+
+**Sin maquillar:**
+
+| Variante | AUC calib (n=15) | AUC valid (n=5) |
+|---|---|---|
+| FWI crudo (línea base) | **0,891** | 0,819 |
+| Índice compuesto v1.0 | 0,767 | 0,752 |
+| **Índice v1.1 (meteo abs × modulador)** | **0,864** | 0,823 |
+| Baseline estacional (solo calendario) | 0,475 | **0,741** |
+
+- **El compuesto original (v1.0) NO batía al FWI crudo.** No se esconde: se
+  diagnosticó (el percentil estacional tiraba la magnitud; la vulnerabilidad era
+  lastre neutro; la estructura sola es casi aleatoria para la *ignición*) y de ahí
+  salió la forma v1.1, que sí alcanza al FWI crudo **conservando** la información de
+  severidad (la estructura predice el TAMAÑO, Spearman 0,616).
+- **El baseline estacional saca 0,741 en validación** — casi como el FWI crudo. Con
+  5 positivos, casi todos de agosto, «es verano» ya separa casi tanto como el modelo:
+  buena parte de la habilidad en validación es estacionalidad. El FWI lleva señal
+  real más allá de la estación, visible en calibración (0,891 vs 0,475), donde hay
+  más n.
+- **Solo 20 positivos en ventana (15 / 5).** Los IC son anchos (validación ±0,25); el
+  AUC-PR ≈ 0 por la tasa base (20 positivos frente a ~10⁶ pares). El índice sirve para
+  **ordenar** días peligrosos, no para clasificar con un corte. Cuando lleguen los
+  positivos 2023-2026 (registro GVA) la validación mejora. **Sin pesos calibrados por
+  datos: la forma se decidió sobre la evidencia, no se ajustó a un AUC bonito.**
 
 ## Stack
 
@@ -267,7 +323,8 @@ docker compose -f docker-compose.yml -f docker-compose.vps.yml exec db \
 | [06](docs/06-api-contract.md) | Contrato REST |
 | [07](docs/07-seguridad.md) | Modelo de amenazas y RGPD |
 | [08](docs/08-roadmap.md) | Plan por fases |
-| [09](docs/09-validacion.md) | Metodología de backtesting |
+| [09](docs/09-validacion.md) | Metodología y resultados del backtest |
+| [10](docs/10-aviso-legal.md) | Aviso legal y privacidad |
 
 ## Datos y atribución
 

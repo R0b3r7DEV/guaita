@@ -36,6 +36,15 @@ function App() {
           </a>
           .
         </p>
+        <p className="disclaimer-legal">
+          <a
+            href="https://github.com/R0b3r7DEV/guaita/blob/main/docs/10-aviso-legal.md"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Aviso legal y privacidad
+          </a>
+        </p>
       </aside>
 
       <div className="map-wrap">

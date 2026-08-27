@@ -414,3 +414,8 @@ body {
   color: #ffe4dc;
   text-decoration: underline;
 }
+.disclaimer-legal {
+  margin: 0.35rem 0 0;
+  font-size: 0.72rem;
+  opacity: 0.85;
+}
