@@ -206,8 +206,32 @@ repositorios ajenos. `wui` no toca las tablas de `risk`.
 
 ## Despliegue
 
-**Producción real (guaita.xpl0day.com).** El VPS comparte máquina con XPL0DAY. El
-montaje que quedó no es el que se preveía (Apache); documentado tal cual es:
+**Producción actual (guaita.fireteanu.dev, desde el 2026-11-14).** El VPS se
+reinstaló desde cero (Ubuntu 26.04, sin Plesk ni XPL0DAY). La configuración del
+servidor vive en el repositorio `R0b3r7DEV/fireteanu.dev` (`infra/servidor/`,
+runbook `docs/runbooks/migracion-vps.md` y ADR del servidor):
+
+- **Docker rootless** del usuario de servicio `apps`, con la red `pasta` para que
+  la API vea la IP real del cliente.
+- **Caddy es la única entrada** (80, 443 y 443/udp) y obtiene él mismo los
+  certificados de Let's Encrypt. `/api/*` va directo a la API y el resto al
+  visor. Las cabeceras de seguridad (CSP con `worker-src blob:` para MapLibre,
+  HSTS, etc.) y el límite de peticiones por IP están en su `Caddyfile`.
+- **Ningún contenedor de GUAITA publica puertos en el host:** el fichero
+  `guaita.compose.yml` de fireteanu.dev quita los `ports:` (`!reset []`) y une
+  `api` y `web` a la red `proxy` de Caddy.
+- **CORS:** `GUAITA_AUTH_CORS_ORIGIN=https://guaita.fireteanu.dev` (también es el
+  valor por defecto de `guaita.auth.cors-origin`).
+- **guaita.xpl0day.com** redirige con un 301 a la dirección nueva, con la misma
+  ruta.
+- **Copia diaria** de la base a las 04:30, cifrada con `age` y descargada fuera
+  del servidor (`scripts/vps/copia-diaria.sh` de fireteanu.dev).
+- `ops/nginx-guaita.conf` se ha borrado: era el bloque para el nginx de XPL0DAY,
+  que ya no existe.
+
+**Histórico: producción en guaita.xpl0day.com (hasta el 2026-11-13).** El VPS
+compartía máquina con XPL0DAY. El montaje que quedó no era el que se preveía
+(Apache); se deja documentado tal cual era:
 
 - **Puerta pública = un contenedor nginx propio de XPL0DAY** (`xpl0day-frontend`,
   daemon Docker de *root*) que ata `:80`/`:443`. No es Apache ni un proxy con

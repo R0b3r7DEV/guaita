@@ -109,7 +109,7 @@ interiores cálidos y costa arriba, montaña del Maestrat/Ports abajo).
 - [x] **Aviso permanente de "no es un sistema de emergencia".**
 - [x] Despliegue en el VPS con HTTPS.
 
-**Criterio CUMPLIDO: URL pública funcionando → https://guaita.xpl0day.com**
+**Criterio CUMPLIDO: URL pública funcionando → https://guaita.xpl0day.com** (desde 2026-11-14, https://guaita.fireteanu.dev)
 (HTTPS válido, HTTP→HTTPS, cabeceras de seguridad, teselas y visor sirviendo).
 
 > **Limitaciones conocidas visibles (docs/04, /metodologia):** pesos de
