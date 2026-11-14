@@ -24,7 +24,7 @@ Es una herramienta analítica y de portafolio. Este aviso debe aparecer en la UI
 | Frontend | React 19 + Vite + TypeScript | Stack conocido del autor (Cuentia) |
 | Mapas | MapLibre GL JS | Open source, sin token ni cuota |
 | Tiles vectoriales | Endpoint MVT propio (ADR-04, sin `pg_tileserv`) | `ST_AsMVT` desde PostGIS |
-| Infra | Docker Compose | VPS propio con Apache como reverse proxy |
+| Infra | Docker Compose | VPS propio con Caddy como única entrada (config en el repo fireteanu.dev) |
 | Tests | JUnit 5 + Testcontainers | Tests de integración con PostGIS real |
 
 ## Comandos

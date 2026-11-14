@@ -38,7 +38,7 @@ class SeguridadConfig {
   @Value("${guaita.auth.jwt-secret}")
   private String jwtSecret;
 
-  @Value("${guaita.auth.cors-origin:https://guaita.xpl0day.com}")
+  @Value("${guaita.auth.cors-origin:https://guaita.fireteanu.dev}")
   private String corsOrigin;
 
   @Bean

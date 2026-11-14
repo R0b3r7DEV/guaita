@@ -19,7 +19,7 @@ de incendios de la provincia.
 
 ## Demo pública
 
-**https://guaita.xpl0day.com**
+**https://guaita.fireteanu.dev** (antes `guaita.xpl0day.com`, que redirige aquí con un 301)
 
 Visor coropleto de los 135 términos de Castellón por **nivel de peligro** (1 Bajo
 → 5 Extremo). Al clicar un municipio, el panel separa **Peligro** («cuán peligroso
